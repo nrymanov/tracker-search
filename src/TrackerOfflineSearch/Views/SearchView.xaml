@@ -1,0 +1,70 @@
+﻿<UserControl x:Class="TrackerOfflineSearch.Views.SearchView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:TrackerOfflineSearch.Views" 
+             xmlns:viewmodels="clr-namespace:TrackerOfflineSearch.ViewModels" 
+             d:DataContext="{d:DesignInstance Type=viewmodels:SearchViewModel}"
+             mc:Ignorable="d" 
+             d:DesignHeight="150" d:DesignWidth="600">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </UserControl.Resources>
+
+    <Border BorderThickness="1" 
+            BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}" 
+            CornerRadius="3"
+            >
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Label Content="_Enter search query" Margin="0, 5, 5, 5" Target="{Binding ElementName=queryText, Mode=OneWay}" Grid.ColumnSpan="2"/>
+
+            <TextBox x:Name="queryText" TextWrapping="Wrap" Grid.Row="1" Margin="5, 0, 5, 5" Text="{Binding QueryString, UpdateSourceTrigger=PropertyChanged}"/>
+
+            <Button Content="_Search" 
+                    Grid.Column="1" 
+                    Grid.Row="1" 
+                    Margin="0, 0, 5, 5" 
+                    Command="{Binding SearchCommand, Mode=OneWay}" 
+                    MinHeight="25" 
+                    MinWidth="45" 
+                    VerticalAlignment="Top"
+                    />
+
+            <Border Grid.Row="2" 
+                    Grid.ColumnSpan="2" 
+                    Margin="5, 0, 5, 5" 
+                    BorderThickness="1" 
+                    BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}" 
+                    Background="{DynamicResource {x:Static SystemColors.InfoBrushKey}}" 
+                    CornerRadius="3"
+                    Padding="5" 
+                    Visibility="{Binding ShowTips, Converter={StaticResource BooleanToVisibilityConverter}}"
+                    >
+
+                <TextBlock
+                    Foreground="{DynamicResource {x:Static SystemColors.InfoTextBrushKey}}">
+                    Search for word &quot;bond&quot; in the <Bold>Title</Bold> field: <Italic>Title:bond</Italic><LineBreak/>
+                    Search for phrase &quot;james bond&quot; in the <Bold>Title</Bold> field: <Italic>Title:&quot;james bond&quot;</Italic>
+                </TextBlock>
+
+            </Border>
+
+            <TextBlock Grid.Row="3" Grid.ColumnSpan="2" HorizontalAlignment="Right" Margin="5, 0, 5, 5">
+                <Hyperlink Command="{Binding SwitchSearchTipsCommand, Mode=OneWay}">Show search tips</Hyperlink>
+            </TextBlock>
+
+        </Grid>
+    </Border>
+</UserControl>
