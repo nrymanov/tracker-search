@@ -4,37 +4,36 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:prism="http://prismlibrary.com/"
-             xmlns:local="clr-namespace:TrackerOfflineSearch.Views"
+             xmlns:local="clr-namespace:TrackerOfflineSearch.Views" 
+             xmlns:vm="clr-namespace:TrackerOfflineSearch.ViewModels" 
+             d:DataContext="{d:DesignInstance Type=vm:SearchToolsViewModel}"
              mc:Ignorable="d" 
              d:DesignHeight="250" 
              d:DesignWidth="400"
              >
-    <UserControl.Resources>
-        <Style TargetType="Expander">
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"/>
-            <Setter Property="Padding" Value="5"/>
-            <Setter Property="ExpandDirection" Value="Down"/>
-        </Style>
 
-    </UserControl.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Orientation="Vertical">
-            <Expander IsExpanded="True" Header="Last queries">
-                <!--<Label Content="last queries will be shown here" HorizontalAlignment="Left" VerticalAlignment="Center"/>-->
-                <ContentControl prism:RegionManager.RegionName="{x:Static local:RegionNames.HistoryRegion}"/>
-            </Expander>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
-            <Expander IsExpanded="True" Header="Tools" Margin="0, 5, 0, 0">
-                <!--<Label Content="Tools"/>-->
-                <ContentControl prism:RegionManager.RegionName="{x:Static local:RegionNames.ToolsRegion}"/>
-            </Expander>
+        <TextBlock Grid.Column="0" Grid.Row="0" Margin="3" Text="Created" FontWeight="Bold"/>
+        <TextBlock Grid.Column="1" Grid.Row="0" Margin="3" Text="{Binding CreationDate, FallbackValue=11.11.2022 15:22, StringFormat=\{0:g\}}"/>
 
-            <Expander IsExpanded="True" Header="Info" Margin="0, 5, 0, 0">
-                <!--<Label Content="Database info" HorizontalAlignment="Left" VerticalAlignment="Center"/>-->
-                <ContentControl prism:RegionManager.RegionName="{x:Static local:RegionNames.InfoRegion}"/>
-            </Expander>
+        <TextBlock Grid.Column="0" Grid.Row="1" Margin="3" Text="Total" FontWeight="Bold"/>
+        <TextBlock Grid.Column="1" Grid.Row="1" Margin="3" Text="{Binding TotalItems, FallbackValue=0, StringFormat=\{0:N0\} items}"/>
+
+        <TextBlock Grid.Column="0" Grid.Row="2" Grid.RowSpan="2" Margin="3" Text="Tools" FontWeight="Bold"/>
+        <StackPanel Grid.Column="1" Grid.Row="2" Orientation="Horizontal">
+            <TextBlock Margin="3" ><Hyperlink><Run Text="Import"/></Hyperlink></TextBlock>
+            <TextBlock Margin="3" ><Hyperlink><Run Text="Optimize"/></Hyperlink></TextBlock>
         </StackPanel>
-    </ScrollViewer>
+    </Grid>
 </UserControl>

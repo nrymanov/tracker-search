@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using BBParser;
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
 using Microsoft.Extensions.Configuration;
@@ -52,6 +53,7 @@ public partial class App : PrismApplication
             .RegisterSingleton<IPostMapper, PostMapper>()
             .RegisterSingleton<IQueryBuilder, QueryBuilder>()
             .RegisterSingleton<IPostRepository, PostRepository>()
+            .RegisterSingleton<IBBTextConverter, BBTextConverter>()
             ;
 
         //containerRegistry
@@ -74,13 +76,10 @@ public partial class App : PrismApplication
         var regionManager = this.Container.Resolve<IRegionManager>();
         regionManager
             // Main views
-            .RegisterViewWithRegion(RegionNames.SearchFormRegion, typeof(SearchView))
+            .RegisterViewWithRegion(RegionNames.SearchFormRegion, typeof(QueryEditorView))
             .RegisterViewWithRegion(RegionNames.SearchResultRegion, typeof(SearchResultView))
             .RegisterViewWithRegion(RegionNames.SearchToolsRegion, typeof(SearchToolsView))
-            // Tools view (inside SearchToolsRegion)
-            .RegisterViewWithRegion(RegionNames.HistoryRegion, typeof(HistoryView))
-            .RegisterViewWithRegion(RegionNames.ToolsRegion, typeof(ToolsView))
-            .RegisterViewWithRegion(RegionNames.InfoRegion, typeof(InfoView))
+            .RegisterViewWithRegion(RegionNames.PostInfoViewRegion, typeof(PostInfoView))
             ;
 
         base.InitializeShell(shell);

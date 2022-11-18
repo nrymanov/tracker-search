@@ -1,15 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Threading;
+using System.Threading.Tasks;
+using DynamicData;
 using Lucene.Net.Analysis;
+using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
 using Microsoft.Extensions.Logging;
 using TrackerOfflineSearch.Domain;
+using TrackerOfflineSearch.Helpers;
 
 namespace TrackerOfflineSearch.Services.Implementation;
 
@@ -24,13 +28,23 @@ public class PostRepository : IPostRepository
         ILogger<PostRepository> logger
         )
     {
-        if (fs is null) throw new ArgumentNullException(nameof(fs));
-
         this._mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         this._analyzer = analyzer ?? throw new ArgumentNullException(nameof(analyzer));
         this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        this._indexPath = fs?.MainIndexPath ?? throw new ArgumentNullException(nameof(fs)); 
 
-        this._indexPath = Path.Combine(fs.AppDataDirectory, AppConst.IndexName);
+        this._searchSubject = new Subject<Query>();
+
+        this._searchSubject
+            .Select(q => Observable.FromAsync(ct => this.SearchPosts(q, ct)))
+            //.SelectMany(SearchPosts)
+            .Switch()
+            .Subscribe(posts => 
+                this._items.Edit(el => { 
+                    el.Clear();
+                    el.AddRange(posts);
+                })
+            );
 
         this._logger.LogDebug("Store index in \"{indexPath}\" folder", this._indexPath);
 
@@ -47,9 +61,30 @@ public class PostRepository : IPostRepository
         get => ReadIndex(r => r.Reader.NumDocs);
     }
 
-    public IEnumerable<Post> Search(Query query, CancellationToken token)
+    public void Search(Query query)
     {
-        throw new System.NotImplementedException();
+        this._searchSubject.OnNext(query);
+    }
+
+    public IObservable<IChangeSet<Post>> Connect() => this._items.Connect();
+
+    public IReadOnlyList<string> Forums 
+    {
+        get
+        {
+            return this.ReadIndex(r => {
+                Fields fields = MultiFields.GetFields(r.Reader);
+                Terms terms = fields.GetTerms(Post.ForumNameField);
+                TermsEnum iterator = terms.GetEnumerator(null);
+
+                var result = new List<string>();
+                while (iterator.MoveNext())
+                {
+                    result.Add(iterator.Term.Utf8ToString());
+                }
+                return result;
+            });
+        }
     }
 
     public IWriteSession NewWriteSession()
@@ -76,6 +111,25 @@ public class PostRepository : IPostRepository
         public Analyzer Analyzer { get; }
         public FSDirectory Directory { get; }
         public DirectoryReader Reader { get; }
+
+        public IEnumerator<Document> Search(Query query)
+        {
+            var searcher = new IndexSearcher(this.Reader);
+
+            var sort = new Sort(
+                SortField.FIELD_SCORE,
+                new SortField(Post.CreatedField, SortFieldType.STRING, true)
+                );
+
+            TopDocs topDocs = searcher.Search(query, 100, sort);
+            ScoreDoc[] hits = topDocs.ScoreDocs;
+
+            foreach (var h in hits)
+            {
+                yield return searcher.Doc(h.Doc);
+            }
+            //return hits.Select(hit => searcher.Doc(hit.Doc));
+        }
 
         public void Dispose()
         {
@@ -105,11 +159,14 @@ public class PostRepository : IPostRepository
 
         public void DeleteAll()
         {
+            using var p = Profiler.Start(this._logger);
             _writer.DeleteAll();
         }
 
         public RAMDirectory CreateChunk(Post[] posts)
         {
+            using var p = Profiler.Start(this._logger);
+
             var dir = new RAMDirectory();
             using var writer = new IndexWriter(dir, this._indexConfig);
 
@@ -120,6 +177,8 @@ public class PostRepository : IPostRepository
 
         public int Add(RAMDirectory index)
         {
+            using var p = Profiler.Start(this._logger);
+
             if (index is null)
                 throw new ArgumentNullException(nameof(index));
 
@@ -128,20 +187,21 @@ public class PostRepository : IPostRepository
             return _writer.NumDocs;
         }
 
+        public void Optimize()
+        {
+            using var p = Profiler.Start(this._logger);
+            _writer.ForceMerge(1);
+        }
+
         public void Commit()
         {
-            var sw = Stopwatch.StartNew();
-            _logger.LogDebug("Commit started");
-
-            //_writer.ForceMerge(5);
-
+            using var p = Profiler.Start(this._logger);
             _writer.Commit();
-
-            _logger.LogDebug("Commit finished in {time}", sw.Elapsed);
         }
 
         public void Rollback()
         {
+            using var p = Profiler.Start(this._logger);
             _writer.Rollback();
         }
 
@@ -173,10 +233,60 @@ public class PostRepository : IPostRepository
         return readFunc(r);
     }
 
+    private Task<IEnumerable<Post>> SearchPosts(Query query, CancellationToken token)
+    {
+        this._logger.LogDebug("Search for {query} was started", query);
+
+        return Task.Run(() => this.ReadIndex(r => {
+            if (token.IsCancellationRequested)
+            {
+                this._logger.LogDebug("Search for {query} was cancelled", query);
+                return Enumerable.Empty<Post>();
+            }
+
+            var searcher = new IndexSearcher(r.Reader);
+
+            var sort = new Sort(
+                SortField.FIELD_SCORE,
+                new SortField(Post.CreatedField, SortFieldType.STRING, true)
+                );
+
+            TopDocs topDocs = searcher.Search(query, 100, sort);
+            ScoreDoc[] hits = topDocs.ScoreDocs;
+
+            if (token.IsCancellationRequested)
+            {
+                this._logger.LogDebug("Search for {query} was performed but result was discarded", query);
+                return Enumerable.Empty<Post>();
+            }
+
+            this._logger.LogDebug("Search for {query} was completed", query);
+
+            return hits.Select(hit => _mapper.ToDomain(searcher.Doc(hit.Doc))).ToList();
+        }), token);
+    }
+
+    //protected IObservable<Post> _SearchPosts(Query query)
+    //{
+    //    var o = Observable.Using(
+    //        () => new ReposytoryReader(_indexPath, _analyzer),
+    //        r => Observable.Generate(
+    //            r.Search(query),
+    //            e => e.MoveNext(),
+    //            e => e,
+    //            e => _mapper.ToDomain(e.Current)
+    //            )
+    //        );
+
+    //    return o;
+    //}
+
     private readonly IPostMapper _mapper;
     private readonly Analyzer _analyzer;
     private readonly ILogger<PostRepository> _logger;
     private readonly string _indexPath;
+    private readonly Subject<Query> _searchSubject;
+    private readonly SourceList<Post> _items = new SourceList<Post>();
 
     #endregion
 }

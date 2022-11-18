@@ -4,7 +4,7 @@ namespace TrackerOfflineSearch.Services;
 
 public interface IQueryBuilder
 {
-    bool TryBuild(string queryString, out Query? query);
+    bool TryBuild(PostQuery postQuery, out Query? searchParams);
 
-    Query Build(string queryString);
+    Query Build(PostQuery postQuery);
 }

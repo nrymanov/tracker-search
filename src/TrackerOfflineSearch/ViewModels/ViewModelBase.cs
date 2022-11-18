@@ -10,13 +10,15 @@ public abstract class ViewModelBase<T> : ReactiveObject
     {
         this._eventAggregator = eventAggregator ?? throw new System.ArgumentNullException(nameof(eventAggregator));
         this._logger = logger ?? throw new System.ArgumentNullException(nameof(logger));
+
+        this.LogDebug("{class} created", typeof(T).Name);
     }
 
-    private string _title = string.Empty;
-    public string Title
+    private string? _title = string.Empty;
+    public string? Title
     {
         get => this._title;
-        set => this.RaiseAndSetIfChanged(ref this._title, value);
+        protected set => this.RaiseAndSetIfChanged(ref this._title, value);
     }
 
     private readonly IEventAggregator _eventAggregator;

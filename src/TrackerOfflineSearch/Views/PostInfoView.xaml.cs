@@ -13,16 +13,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace TrackerOfflineSearch.ViewModels
+namespace TrackerOfflineSearch.Views;
+/// <summary>
+/// Interaction logic for PostInfoView.xaml
+/// </summary>
+public partial class PostInfoView : UserControl
 {
-    /// <summary>
-    /// Interaction logic for ToolsView.xaml
-    /// </summary>
-    public partial class ToolsView : UserControl
+    public PostInfoView()
     {
-        public ToolsView()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }

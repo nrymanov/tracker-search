@@ -37,4 +37,8 @@
     <None Include="D:\Projects\tracker-search\src\TrackerOfflineSearch\.editorconfig" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\BBParser\BBParser.csproj" />
+  </ItemGroup>
+
 </Project>

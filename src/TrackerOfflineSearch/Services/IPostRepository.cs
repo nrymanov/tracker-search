@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Threading;
+﻿using System;
+using System.Collections.Generic;
+using DynamicData;
 using Lucene.Net.Search;
 using TrackerOfflineSearch.Domain;
 
@@ -9,7 +10,11 @@ public interface IPostRepository
 {
     int TotalItems { get; }
 
-    IEnumerable<Post> Search(Query query, CancellationToken token);
+    void Search(Query query);
+
+    IObservable<IChangeSet<Post>> Connect();
+
+    IReadOnlyList<string> Forums { get; }
 
     IWriteSession NewWriteSession();
 }

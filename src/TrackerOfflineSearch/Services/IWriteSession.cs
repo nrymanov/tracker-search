@@ -12,6 +12,8 @@ public interface IWriteSession : IDisposable
 
     int Add(RAMDirectory index);
 
+    void Optimize();
+
     void Commit();
 
     void Rollback();

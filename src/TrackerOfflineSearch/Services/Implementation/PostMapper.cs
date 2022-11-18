@@ -83,7 +83,7 @@ public class PostMapper : IPostMapper
         {
             new Int32Field(Post.IdField, post.Id, Field.Store.YES),
 
-            new StringField(Post.CreatedField, DateTools.DateToString(post.Created, DateResolution.MINUTE), Field.Store.YES),
+            new StringField(Post.CreatedField, DateTools.DateToString(post.Created, AppConst.DefaultDateResolution), Field.Store.YES),
             new Int64Field(Post.SizeField, post.Size, Field.Store.YES),
 
             new TextField(Post.TitleField, post.Title, Field.Store.YES),
@@ -91,7 +91,7 @@ public class PostMapper : IPostMapper
 
             new StoredField(Post.HashField, post.Hash),
 
-            new Int32Field(Post.TrackerIdField, post.TrackerId, Field.Store.YES),
+            new StoredField(Post.TrackerIdField, post.TrackerId),
 
             new Int32Field(Post.ForumIdField, post.ForumId, Field.Store.YES),
             new StringField(Post.ForumNameField, post.ForumName, Field.Store.YES)

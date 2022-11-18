@@ -11,11 +11,10 @@ public class FileSystem : IFileSystem
         var appName = this.GetType().Assembly.GetName().Name;
 
         this.AppDataDirectory = Path.Combine(localData, appName);
+        this.MainIndexPath = Path.Combine(this.AppDataDirectory, AppConst.IndexName);
     }
 
-    public string AppDataDirectory 
-    {
-        get; 
-        private set;
-    }
+    public string AppDataDirectory { get; }
+
+    public string MainIndexPath { get; }
 }
