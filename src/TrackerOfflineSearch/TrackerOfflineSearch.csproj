@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net6.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
+    <Nullable>annotations</Nullable>
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
@@ -34,11 +34,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="D:\Projects\tracker-search\src\TrackerOfflineSearch\.editorconfig" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\BBParser\BBParser.csproj" />
+    <EmbeddedResource Include="Services\Implementation\PostTemplate.html" />
   </ItemGroup>
 
 </Project>

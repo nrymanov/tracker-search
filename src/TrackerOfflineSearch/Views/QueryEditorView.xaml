@@ -66,7 +66,6 @@
                        VerticalAlignment="Center" HorizontalAlignment="Right"
                        Text="Forum"/>
         <ComboBox Grid.Column="1" Grid.Row="2" Grid.ColumnSpan="5" Margin="3"
-                      VerticalAlignment="Center" 
                       ItemsSource="{Binding Forums}" SelectedItem="{Binding ForumFilter}"
                       />
 
@@ -91,18 +90,11 @@
         <TextBlock Grid.Column="0" Grid.Row="4"  Margin="3"
                    VerticalAlignment="Center" HorizontalAlignment="Right"
                    Text="Created"/>
-        <TextBlock Grid.Column="1" Grid.Row="4" Margin="3"
-                   VerticalAlignment="Center"
-                   Text="from"/>
-        <DatePicker Grid.Column="2" Grid.Row="4" Margin="3"
-                    VerticalAlignment="Center"
-                    SelectedDate="{Binding FromDateFilter, UpdateSourceTrigger=PropertyChanged}"/>
-        <TextBlock Grid.Column="3" Grid.Row="4" Margin="3"
-                   VerticalAlignment="Center" HorizontalAlignment="Center"
-                   Text="to"/>
-        <DatePicker Grid.Column="4" Grid.Row="4" Margin="3"
-                    VerticalAlignment="Center"
-                    SelectedDate="{Binding ToDateFilter, UpdateSourceTrigger=PropertyChanged}"/>
+        <ComboBox Grid.Column="1" Grid.Row="4" Grid.ColumnSpan="5" Margin="3" 
+                  ItemsSource="{Binding Intervals, Mode=OneWay}" 
+                  DisplayMemberPath="Title" 
+                  SelectedItem="{Binding SelectedInterval}"
+                  />
 
         <!-- Show simple/advanced search form -->
         <TextBlock Grid.Column="0" Grid.Row="5" Grid.ColumnSpan="6" Margin="3" HorizontalAlignment="Right">
@@ -121,39 +113,6 @@
                     </Run>
                 </Hyperlink>
         </TextBlock>
-
-        <!--<StackPanel Margin="5,0,5,5" Grid.Row="2" Orientation="Horizontal">
-
-                <TextBlock Margin="0, 0, 5, 0">
-                    <Hyperlink Command="{Binding SwitchSearchTipsCommand, Mode=OneWay}">Show search tips</Hyperlink>
-                </TextBlock>
-
-                <TextBlock Margin="0, 0, 5, 0">
-                    <Hyperlink Command="{Binding SwitchSearchTipsCommand, Mode=OneWay}">Title</Hyperlink>
-                </TextBlock>
-
-                <TextBlock Margin="0, 0, 5, 0">
-                    <Hyperlink Command="{Binding SwitchSearchTipsCommand, Mode=OneWay}">Content</Hyperlink>
-                </TextBlock>
-            </StackPanel>
-
-            <Border Grid.Row="3" 
-                    Margin="5, 0, 5, 5" 
-                    BorderThickness="1" 
-                    BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}" 
-                    Background="{DynamicResource {x:Static SystemColors.InfoBrushKey}}" 
-                    CornerRadius="3"
-                    Padding="5" 
-                    Visibility="{Binding ShowTips, Converter={StaticResource BooleanToVisibilityConverter}}"
-                    >
-
-                <TextBlock
-                    Foreground="{DynamicResource {x:Static SystemColors.InfoTextBrushKey}}">
-                    Search for word &quot;bond&quot; in the <Bold>Title</Bold> field: <Italic>Title:bond</Italic><LineBreak/>
-                    Search for phrase &quot;james bond&quot; in the <Bold>Title</Bold> field: <Italic>Title:&quot;james bond&quot;</Italic>
-                </TextBlock>
-
-            </Border>-->
 
     </Grid>
 </UserControl>

@@ -13,25 +13,15 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace TrackerOfflineSearch.Views
+namespace TrackerOfflineSearch.Views;
+
+/// <summary>
+/// Interaction logic for QueryEditorView.xaml
+/// </summary>
+public partial class QueryEditorView : UserControl
 {
-    /// <summary>
-    /// Interaction logic for QueryEditorView.xaml
-    /// </summary>
-    public partial class QueryEditorView : UserControl
+    public QueryEditorView()
     {
-        public QueryEditorView()
-        {
-            InitializeComponent();
-        }
-
-        private bool isSimpleState = true;
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            isSimpleState = !isSimpleState;
-
-            VisualStateManager.GoToState(this, isSimpleState ? "Simple" : "Advanced", true);
-        }
+        this.InitializeComponent();
     }
 }

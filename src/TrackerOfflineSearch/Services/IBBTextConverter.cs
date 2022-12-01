@@ -1,4 +1,4 @@
-﻿namespace BBParser;
+﻿namespace TrackerOfflineSearch.Services;
 
 public interface IBBTextConverter
 {

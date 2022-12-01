@@ -2,4 +2,4 @@
 
 namespace TrackerOfflineSearch.Events;
 
-public class ReporitoryChangedEvent : PubSubEvent { }
+public class SearchActiveEvent : PubSubEvent<bool> { }

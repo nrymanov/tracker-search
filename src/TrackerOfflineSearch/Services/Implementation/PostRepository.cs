@@ -12,7 +12,9 @@ using Lucene.Net.Index;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
 using Microsoft.Extensions.Logging;
+using Prism.Events;
 using TrackerOfflineSearch.Domain;
+using TrackerOfflineSearch.Events;
 using TrackerOfflineSearch.Helpers;
 
 namespace TrackerOfflineSearch.Services.Implementation;
@@ -22,31 +24,37 @@ public class PostRepository : IPostRepository
     #region Constructor
 
     public PostRepository(
+        IEventAggregator eventAggregator,
         IPostMapper mapper, 
         IFileSystem fs, 
         Analyzer analyzer, 
         ILogger<PostRepository> logger
         )
     {
-        this._mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
-        this._analyzer = analyzer ?? throw new ArgumentNullException(nameof(analyzer));
-        this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        this._indexPath = fs?.MainIndexPath ?? throw new ArgumentNullException(nameof(fs)); 
+        this.eventAggregator = eventAggregator ?? throw new System.ArgumentNullException(nameof(eventAggregator));
+        this.mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        this.analyzer = analyzer ?? throw new ArgumentNullException(nameof(analyzer));
+        this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        this.indexPath = fs?.MainIndexPath ?? throw new ArgumentNullException(nameof(fs)); 
 
-        this._searchSubject = new Subject<Query>();
+        this.searchSubject = new Subject<Query>();
 
-        this._searchSubject
+        this.searchSubject
+            .Do(_ => this.eventAggregator.GetEvent<SearchActiveEvent>().Publish(true))
             .Select(q => Observable.FromAsync(ct => this.SearchPosts(q, ct)))
-            //.SelectMany(SearchPosts)
             .Switch()
-            .Subscribe(posts => 
-                this._items.Edit(el => { 
+            .Subscribe(posts =>
+            {
+                this.items.Edit(el =>
+                {
                     el.Clear();
                     el.AddRange(posts);
-                })
-            );
+                });
 
-        this._logger.LogDebug("Store index in \"{indexPath}\" folder", this._indexPath);
+                this.eventAggregator.GetEvent<SearchActiveEvent>().Publish(false);
+            });
+
+        this.logger.LogDebug("Store index in \"{indexPath}\" folder", this.indexPath);
 
         using var ws = this.NewWriteSession();
         ws.Commit();
@@ -56,23 +64,18 @@ public class PostRepository : IPostRepository
 
     #region IPostRepository implementation
 
-    public int TotalItems 
-    { 
-        get => ReadIndex(r => r.Reader.NumDocs);
-    }
+    public int TotalItems => this.ReadIndex(r => r.Reader.NumDocs);
 
-    public void Search(Query query)
-    {
-        this._searchSubject.OnNext(query);
-    }
+    public void Search(Query query) => this.searchSubject.OnNext(query);
 
-    public IObservable<IChangeSet<Post>> Connect() => this._items.Connect();
+    public IObservable<IChangeSet<Post>> Connect() => this.items.Connect();
 
     public IReadOnlyList<string> Forums 
     {
-        get
+        get 
         {
-            return this.ReadIndex(r => {
+            return 
+                this.ReadIndex(r => {
                 Fields fields = MultiFields.GetFields(r.Reader);
                 Terms terms = fields.GetTerms(Post.ForumNameField);
                 TermsEnum iterator = terms.GetEnumerator(null);
@@ -87,10 +90,7 @@ public class PostRepository : IPostRepository
         }
     }
 
-    public IWriteSession NewWriteSession()
-    {
-        return new WriteSession(_indexPath, _analyzer, _mapper, _logger);
-    }
+    public IWriteSession NewWriteSession() => new WriteSession(this.indexPath, this.analyzer, this.mapper, this.logger);
 
     #endregion
 
@@ -100,11 +100,11 @@ public class PostRepository : IPostRepository
     {
         public ReposytoryReader(string indexPath, Analyzer analyzer)
         {
-            IndexPath = indexPath;
-            Analyzer = analyzer;
+            this.IndexPath = indexPath;
+            this.Analyzer = analyzer;
 
-            Directory = FSDirectory.Open(IndexPath);
-            Reader = DirectoryReader.Open(Directory);
+            this.Directory = FSDirectory.Open(this.IndexPath);
+            this.Reader = DirectoryReader.Open(this.Directory);
         }
 
         public string IndexPath { get; }
@@ -133,8 +133,8 @@ public class PostRepository : IPostRepository
 
         public void Dispose()
         {
-            Reader.Dispose();
-            Directory.Dispose();
+            this.Reader.Dispose();
+            this.Directory.Dispose();
         }
     }
 
@@ -142,25 +142,25 @@ public class PostRepository : IPostRepository
     {
         public WriteSession(string indexPath, Analyzer analyzer, IPostMapper mapper, ILogger<PostRepository> logger)
         {
-            _indexPath = indexPath;
-            _analyzer = analyzer;
-            _mapper = mapper;
-            _logger = logger;
+            this._indexPath = indexPath;
+            this._analyzer = analyzer;
+            this._mapper = mapper;
+            this._logger = logger;
 
-            this._indexConfig = new IndexWriterConfig(AppConst.SearchEngineVersion, _analyzer) 
+            this._indexConfig = new IndexWriterConfig(AppConst.SearchEngineVersion, this._analyzer) 
             { 
                 OpenMode = OpenMode.CREATE_OR_APPEND,
                 //RAMBufferSizeMB = 1024,
             };
 
-            _directory = FSDirectory.Open(_indexPath);
-            _writer = new IndexWriter(_directory, this._indexConfig);
+            this._directory = FSDirectory.Open(this._indexPath);
+            this._writer = new IndexWriter(this._directory, this._indexConfig);
         }
 
         public void DeleteAll()
         {
             using var p = Profiler.Start(this._logger);
-            _writer.DeleteAll();
+            this._writer.DeleteAll();
         }
 
         public RAMDirectory CreateChunk(Post[] posts)
@@ -170,7 +170,7 @@ public class PostRepository : IPostRepository
             var dir = new RAMDirectory();
             using var writer = new IndexWriter(dir, this._indexConfig);
 
-            writer.AddDocuments(posts.Select(_mapper.ToRepository));
+            writer.AddDocuments(posts.Select(this._mapper.ToRepository));
 
             return dir;
         }
@@ -182,33 +182,33 @@ public class PostRepository : IPostRepository
             if (index is null)
                 throw new ArgumentNullException(nameof(index));
 
-            _writer.AddIndexes(new[] { index });
+            this._writer.AddIndexes(new[] { index });
 
-            return _writer.NumDocs;
+            return this._writer.NumDocs;
         }
 
         public void Optimize()
         {
             using var p = Profiler.Start(this._logger);
-            _writer.ForceMerge(1);
+            this._writer.ForceMerge(1);
         }
 
         public void Commit()
         {
             using var p = Profiler.Start(this._logger);
-            _writer.Commit();
+            this._writer.Commit();
         }
 
         public void Rollback()
         {
             using var p = Profiler.Start(this._logger);
-            _writer.Rollback();
+            this._writer.Rollback();
         }
 
         public void Dispose()
         {
-            _writer.Dispose();
-            _directory.Dispose();
+            this._writer.Dispose();
+            this._directory.Dispose();
         }
 
         private readonly string _indexPath;
@@ -228,19 +228,19 @@ public class PostRepository : IPostRepository
     {
         System.Diagnostics.Debug.Assert(readFunc != null);
 
-        using var r = new ReposytoryReader(_indexPath, _analyzer);
+        using var r = new ReposytoryReader(this.indexPath, this.analyzer);
 
         return readFunc(r);
     }
 
     private Task<IEnumerable<Post>> SearchPosts(Query query, CancellationToken token)
     {
-        this._logger.LogDebug("Search for {query} was started", query);
+        this.logger.LogDebug("Search for {query} was started", query);
 
         return Task.Run(() => this.ReadIndex(r => {
             if (token.IsCancellationRequested)
             {
-                this._logger.LogDebug("Search for {query} was cancelled", query);
+                this.logger.LogDebug("Search for {query} was cancelled", query);
                 return Enumerable.Empty<Post>();
             }
 
@@ -256,37 +256,23 @@ public class PostRepository : IPostRepository
 
             if (token.IsCancellationRequested)
             {
-                this._logger.LogDebug("Search for {query} was performed but result was discarded", query);
+                this.logger.LogDebug("Search for {query} was performed but result was discarded", query);
                 return Enumerable.Empty<Post>();
             }
 
-            this._logger.LogDebug("Search for {query} was completed", query);
+            this.logger.LogDebug("Search for {query} was completed", query);
 
-            return hits.Select(hit => _mapper.ToDomain(searcher.Doc(hit.Doc))).ToList();
+            return hits.Select(hit => this.mapper.ToDomain(searcher.Doc(hit.Doc))).ToList();
         }), token);
     }
 
-    //protected IObservable<Post> _SearchPosts(Query query)
-    //{
-    //    var o = Observable.Using(
-    //        () => new ReposytoryReader(_indexPath, _analyzer),
-    //        r => Observable.Generate(
-    //            r.Search(query),
-    //            e => e.MoveNext(),
-    //            e => e,
-    //            e => _mapper.ToDomain(e.Current)
-    //            )
-    //        );
-
-    //    return o;
-    //}
-
-    private readonly IPostMapper _mapper;
-    private readonly Analyzer _analyzer;
-    private readonly ILogger<PostRepository> _logger;
-    private readonly string _indexPath;
-    private readonly Subject<Query> _searchSubject;
-    private readonly SourceList<Post> _items = new SourceList<Post>();
+    private readonly IEventAggregator eventAggregator;
+    private readonly IPostMapper mapper;
+    private readonly Analyzer analyzer;
+    private readonly ILogger<PostRepository> logger;
+    private readonly string indexPath;
+    private readonly Subject<Query> searchSubject;
+    private readonly SourceList<Post> items = new();
 
     #endregion
 }

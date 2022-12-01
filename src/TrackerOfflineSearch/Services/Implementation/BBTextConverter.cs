@@ -1,28 +1,13 @@
-﻿using System.Reflection;
+﻿using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
-namespace BBParser;
+namespace TrackerOfflineSearch.Services.Implementation;
 
 public class BBTextConverter : IBBTextConverter
 {
-    private const string PostBodyPlaceholder = "<!-- Post placeholder -->";
-
-    private class SimpleReplacer
-    {
-        public SimpleReplacer(string pattern, string replacement)
-        {
-            this._regex = new Regex(pattern, RegexOptions.IgnoreCase);
-            this._replacement = replacement;
-        }
-
-        public string Replace(string bbText) => this._regex.Replace(bbText, this._replacement);
-
-        private readonly Regex _regex;
-        private readonly string _replacement;
-    }
-
-    private readonly SimpleReplacer[] tagReplacers;
-    private readonly string _template;
+    #region Constructor
 
     public BBTextConverter()
     {
@@ -87,23 +72,50 @@ public class BBTextConverter : IBBTextConverter
         };
 
         var assembly = Assembly.GetExecutingAssembly();
-        using var resource = assembly.GetManifestResourceStream("BBParser.PostTemplate.html");
+        using var resource = assembly.GetManifestResourceStream(this.GetType(), "PostTemplate.html");
         using var reader = new StreamReader(resource);
 
-        this._template = reader.ReadToEnd();
+        this.template = reader.ReadToEnd();
     }
+
+    #endregion
+
+    #region IBBTextConverter implementation
 
     public string Convert(string bbText)
     {
-
         // \r\n => \n, \n => <br>
-        var postBody = bbText.Replace("\r\n", "\n").Replace("\n", "<br>");
 
-        foreach (var st in this.tagReplacers)
+        var postBody = this.tagReplacers.Aggregate(
+            bbText.Replace("\r\n", "\n").Replace("\n", "<br>"), 
+            (text, replacer) => replacer.Replace(text)
+        );
+
+        return this.template.Replace(PostBodyPlaceholder, postBody);
+    }
+
+    #endregion
+
+    #region Private fields & methods
+
+    private const string PostBodyPlaceholder = "<!-- Post placeholder -->";
+
+    private class SimpleReplacer
+    {
+        public SimpleReplacer(string pattern, string replacement)
         {
-            postBody = st.Replace(postBody);
+            this.regex = new Regex(pattern, RegexOptions.IgnoreCase);
+            this.replacement = replacement;
         }
 
-        return this._template.Replace(PostBodyPlaceholder, postBody);
+        public string Replace(string bbText) => this.regex.Replace(bbText, this.replacement);
+
+        private readonly Regex regex;
+        private readonly string replacement;
     }
+
+    private readonly SimpleReplacer[] tagReplacers;
+    private readonly string template;
+
+    #endregion
 }

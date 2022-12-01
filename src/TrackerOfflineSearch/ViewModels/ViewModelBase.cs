@@ -8,10 +8,10 @@ public abstract class ViewModelBase<T> : ReactiveObject
 {
     protected ViewModelBase(IEventAggregator eventAggregator, ILogger<T> logger)
     {
-        this._eventAggregator = eventAggregator ?? throw new System.ArgumentNullException(nameof(eventAggregator));
-        this._logger = logger ?? throw new System.ArgumentNullException(nameof(logger));
+        this.eventAggregator = eventAggregator ?? throw new System.ArgumentNullException(nameof(eventAggregator));
+        this.logger = logger ?? throw new System.ArgumentNullException(nameof(logger));
 
-        this.LogDebug("{class} created", typeof(T).Name);
+        this.Logger.LogDebug("{class} created", typeof(T).Name);
     }
 
     private string? _title = string.Empty;
@@ -21,14 +21,10 @@ public abstract class ViewModelBase<T> : ReactiveObject
         protected set => this.RaiseAndSetIfChanged(ref this._title, value);
     }
 
-    private readonly IEventAggregator _eventAggregator;
-    protected IEventAggregator EventAggregator => this._eventAggregator;
+    protected IEventAggregator EventAggregator => this.eventAggregator;
 
-    private readonly ILogger<T> _logger;
-    protected ILogger<T> Logger => this._logger;
+    protected ILogger<T> Logger => this.logger;
 
-    protected void LogDebug(string? message, params object?[] args)
-    {
-        this.Logger.LogDebug(message, args);
-    }
+    private readonly IEventAggregator eventAggregator;
+    private readonly ILogger<T> logger;
 }

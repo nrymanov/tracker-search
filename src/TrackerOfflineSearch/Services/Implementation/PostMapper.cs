@@ -13,11 +13,13 @@ public class PostMapper : IPostMapper
         if (doc is null)
             throw new ArgumentNullException(nameof(doc));
 
+        var created = DateTime.SpecifyKind(DateTools.StringToDate(doc.Get(Post.CreatedField)), DateTimeKind.Utc);
+
         return new Post
         {
             Id = doc.GetField(Post.IdField).GetInt32ValueOrDefault(),
 
-            Created = DateTools.StringToDate(doc.Get(Post.CreatedField)),
+            Created = created,
             Size = doc.GetField(Post.SizeField).GetInt64ValueOrDefault(),
 
             Title = doc.Get(Post.TitleField),
@@ -38,7 +40,7 @@ public class PostMapper : IPostMapper
             throw new ArgumentNullException(nameof(el));
 
         var id = (int)el.Attribute("id");
-        var created = DateTime.ParseExact(el.Attribute("registred_at").Value, "yyyy.MM.d H:m:s", null);
+        var created = DateTime.SpecifyKind(DateTime.ParseExact(el.Attribute("registred_at").Value, "yyyy.MM.d H:m:s", null), DateTimeKind.Utc);
         var size = (long)el.Attribute("size");
 
         var title = el.Element("title").Value;

@@ -6,13 +6,7 @@ namespace TrackerOfflineSearch.Services.Implementation;
 
 internal static class QueryBuilderHelpers
 {
-    public static string? DateToString(this DateTime dt)
-    {
-        return DateTools.DateToString(dt, AppConst.DefaultDateResolution);
-    }
+    public static string? DateToString(this DateTime dt) => DateTools.DateToString(dt, AppConst.DefaultDateResolution);
 
-    public static BytesRef? ToBytesRef(this DateTime? dt)
-    {
-        return dt.HasValue ? new BytesRef(dt.Value.DateToString()) : null;
-    }
+    public static BytesRef? ToBytesRef(this DateTime? dt) => dt.HasValue ? new BytesRef(dt.Value.DateToString()) : null;
 }

@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using Microsoft.Extensions.Logging;
@@ -20,36 +23,49 @@ public class QueryEditorViewModel : ViewModelBase<QueryEditorViewModel>
         ILogger<QueryEditorViewModel> logger
         ) : base(eventAggregator, logger)
     {
-        this._queryBuilder = queryBuilder ?? throw new ArgumentNullException(nameof(queryBuilder));
-        this._postRepository = postRepository ?? throw new ArgumentNullException(nameof(postRepository));
+        this.queryBuilder = queryBuilder ?? throw new ArgumentNullException(nameof(queryBuilder));
+        this.postRepository = postRepository ?? throw new ArgumentNullException(nameof(postRepository));
 
-        this.Forums = new ObservableCollection<string>(this._postRepository.Forums);
+        this.Forums = new ObservableCollection<string>(GetToplevelForums(this.postRepository.Forums));
+
+        this.Intervals = new ObservableCollection<DateIntervalViewModel> 
+        { 
+            new DateIntervalViewModel(DateIntervalKind.None),
+            new DateIntervalViewModel(DateIntervalKind.Week),
+            new DateIntervalViewModel(DateIntervalKind.TwoWeeks),
+            new DateIntervalViewModel(DateIntervalKind.Month),
+            new DateIntervalViewModel(DateIntervalKind.Quarter),
+            new DateIntervalViewModel(DateIntervalKind.HalfYear),
+            new DateIntervalViewModel(DateIntervalKind.Year)            
+        };
+
+        this.SelectedInterval = this.Intervals.First();
 
         this.ChangeQueryTypeCommand = ReactiveCommand.Create(() =>
         {
             this.IsAdvancedQuery = !this.IsAdvancedQuery;
-            GC.Collect();
+            GC.Collect(); // TODO 10 remove this!!!
         });
 
         this.WhenAnyValue(
             vm => vm.TitleFilter, vm => vm.ContentFilter,
             vm => vm.ForumFilter,
             vm => vm.FromSizeFilter, vm => vm.ToSizeFilter,
-            vm => vm.FromDateFilter, vm => vm.ToDateFilter
+            vm => vm.SelectedInterval
             )
             .Throttle(TimeSpan.FromMilliseconds(500))
-            .Select(qs => this._queryBuilder.TryBuild(
+            .Select(qs => this.queryBuilder.TryBuild(
                 new PostQuery(
                     this.TitleFilter, this.ContentFilter,
                     this.ForumFilter,
                     this.FromSizeFilter, this.ToSizeFilter,
-                    this.FromDateFilter, this.ToDateFilter
+                    this.SelectedInterval
                 ),
                 out var query
                 ) ? query : null)
             .Where(q => q != null)
             .DistinctUntilChanged()
-            .Subscribe(q => this._postRepository.Search(q!));
+            .Subscribe(q => this.postRepository.Search(q!));
     }
 
     #endregion
@@ -58,41 +74,32 @@ public class QueryEditorViewModel : ViewModelBase<QueryEditorViewModel>
 
     public string? TitleFilter
     {
-        get => _titleFilter;
-        set => this.RaiseAndSetIfChanged(ref _titleFilter, value);
+        get => this.titleFilter;
+        set => this.RaiseAndSetIfChanged(ref this.titleFilter, value);
     }
+
     public string? ContentFilter
     {
-        get => _contentFilter;
-        set => this.RaiseAndSetIfChanged(ref _contentFilter, value);
+        get => this.contentFilter;
+        set => this.RaiseAndSetIfChanged(ref this.contentFilter, value);
     }
 
     public string? ForumFilter
     {
-        get => _forumFilter;
-        set => this.RaiseAndSetIfChanged(ref _forumFilter, value);
+        get => this.forumFilter;
+        set => this.RaiseAndSetIfChanged(ref this.forumFilter, value);
     }
 
     public long? FromSizeFilter
     {
-        get => _fromSizeFilter;
-        set => this.RaiseAndSetIfChanged(ref _fromSizeFilter, value);
+        get => this.fromSizeFilter;
+        set => this.RaiseAndSetIfChanged(ref this.fromSizeFilter, value);
     }
+    
     public long? ToSizeFilter
     {
-        get => _toSizeFilter;
-        set => this.RaiseAndSetIfChanged(ref _toSizeFilter, value);
-    }
-
-    public DateTime? FromDateFilter
-    {
-        get => _fromDateFilter;
-        set => this.RaiseAndSetIfChanged(ref _fromDateFilter, value);
-    }
-    public DateTime? ToDateFilter
-    {
-        get => _toDateFilter;
-        set => this.RaiseAndSetIfChanged(ref _toDateFilter, value);
+        get => this.toSizeFilter;
+        set => this.RaiseAndSetIfChanged(ref this.toSizeFilter, value);
     }
 
     public ObservableCollection<string> Forums 
@@ -100,10 +107,21 @@ public class QueryEditorViewModel : ViewModelBase<QueryEditorViewModel>
         get;
     }
 
+    public ObservableCollection<DateIntervalViewModel> Intervals
+    { 
+        get;
+    }
+
+    public DateIntervalViewModel SelectedInterval 
+    {
+        get => this.selectedInterval;
+        set => this.RaiseAndSetIfChanged(ref this.selectedInterval, value);
+    }
+
     public bool IsAdvancedQuery
     {
-        get => _isAdvancedQuery;
-        set => this.RaiseAndSetIfChanged(ref _isAdvancedQuery, value);
+        get => this.isAdvancedQuery;
+        set => this.RaiseAndSetIfChanged(ref this.isAdvancedQuery, value);
     }
 
     public ReactiveCommand<Unit, Unit> ChangeQueryTypeCommand { get; }
@@ -112,21 +130,77 @@ public class QueryEditorViewModel : ViewModelBase<QueryEditorViewModel>
 
     #region Private fields & methods
 
-    private readonly IQueryBuilder _queryBuilder;
-    private readonly IPostRepository _postRepository;
+    [DebuggerDisplay("Name = {Name} Path = {Path}")]
+    private class Forum
+    {
+        public string Name { get; init; }
 
-    private string? _titleFilter;
-    private string? _contentFilter;
+        public Forum? Parent { get; init; }
 
-    private string? _forumFilter;
+        public string Path 
+        {
+            get 
+            {
+                if (this.Parent is null)
+                    return this.Name;
 
-    private long? _fromSizeFilter;
-    private long? _toSizeFilter;
+                return $"{this.Parent.Path} - {this.Name}";
+            }
+        }
 
-    private DateTime? _fromDateFilter;
-    private DateTime? _toDateFilter;
-    
-    private bool _isAdvancedQuery;
+        public List<Forum> Children { get; } = new List<Forum>();
+    }
+
+    private static IEnumerable<Forum> BuildForumTree(IEnumerable<string> forums)
+    {
+        var forumCache = new Dictionary<string, Forum>();
+
+        var topForums = new List<Forum>();
+
+        foreach (var fn in forums)
+        {
+            var parts = fn.Split(" - ");
+
+            Forum? parentForum = null;
+
+            for (int i = 0; i < parts.Length; i++)
+            {
+                var f = new Forum { Name = parts[i], Parent = parentForum };
+                if (forumCache.TryGetValue(f.Path, out var cached))
+                {
+                    parentForum = cached;
+                }
+                else
+                {
+                    if (parentForum is null)
+                        topForums.Add(f);
+                    else
+                        parentForum.Children.Add(f);
+                    forumCache[f.Path] = f;
+                    parentForum = f;
+                }
+            }
+        }
+
+        return topForums;
+    }
+
+    private static IEnumerable<string> GetToplevelForums(IEnumerable<string> forums) => BuildForumTree(forums).Select(f => f.Name);
+
+    private readonly IQueryBuilder queryBuilder;
+    private readonly IPostRepository postRepository;
+
+    private string? titleFilter;
+    private string? contentFilter;
+
+    private string? forumFilter;
+
+    private long? fromSizeFilter;
+    private long? toSizeFilter;
+
+    private DateIntervalViewModel selectedInterval;
+
+    private bool isAdvancedQuery;
 
     #endregion
 }

@@ -9,38 +9,42 @@ namespace TrackerOfflineSearch.ViewModels;
 
 public class SearchToolsViewModel : ViewModelBase<SearchToolsViewModel>
 {
+    #region Constructor
+
     public SearchToolsViewModel(IPostRepository repository, IEventAggregator eventAggregator, ILogger<SearchToolsViewModel> logger) : base(eventAggregator, logger)
     {
-        this._repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        this.repository = repository ?? throw new ArgumentNullException(nameof(repository));
 
-        this.EventAggregator.GetEvent<ReporitoryChangedEvent>().Subscribe(UpdateReporitoryInfo, ThreadOption.UIThread);
+        this.EventAggregator.GetEvent<ReporitoryChangedEvent>().Subscribe(this.UpdateReporitoryInfo, ThreadOption.UIThread);
 
         this.UpdateReporitoryInfo();
     }
 
+    #endregion
+
+    #region Public properties & methods
+
     public DateTime CreationDate
     {
-        get => _creationDate;
-        private set => this.RaiseAndSetIfChanged(ref _creationDate, value);
+        get => this.creationDate;
+        private set => this.RaiseAndSetIfChanged(ref this.creationDate, value);
     }
 
     public int TotalItems
     {
-        get => _totalItems;
-        private set => this.RaiseAndSetIfChanged(ref _totalItems, value);
+        get => this.totalItems;
+        private set => this.RaiseAndSetIfChanged(ref this.totalItems, value);
     }
+
+    #endregion
 
     #region Private fields & methods
 
-    private void UpdateReporitoryInfo()
-    {
-        this.TotalItems = this._repository.TotalItems;
-    }
+    private void UpdateReporitoryInfo() => this.TotalItems = this.repository.TotalItems;
 
-    private readonly IPostRepository _repository;
-    private int _totalItems;
-    private DateTime _creationDate = DateTime.Now;
+    private readonly IPostRepository repository;
+    private int totalItems;
+    private DateTime creationDate = DateTime.Now;
 
     #endregion
 }
-

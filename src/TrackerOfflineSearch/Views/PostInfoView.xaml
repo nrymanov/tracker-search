@@ -47,7 +47,7 @@
             <TextBox Grid.Column="1" Grid.Row="2" Margin="3" Text="{Binding Size, Mode=OneWay, Converter={StaticResource SizeToString}}" IsReadOnly="True" BorderThickness="0"/>
 
             <TextBlock Grid.Column="0" Grid.Row="3" Margin="3" Text="Created" FontWeight="Bold" HorizontalAlignment="Right"/>
-            <TextBox Grid.Column="1" Grid.Row="3" Margin="3" Text="{Binding Created, Mode=OneWay}" IsReadOnly="True" BorderThickness="0"/>
+            <TextBox Grid.Column="1" Grid.Row="3" Margin="3" Text="{Binding Created, Mode=OneWay, StringFormat=\{0:d\}}" IsReadOnly="True" BorderThickness="0"/>
 
             <TextBlock Grid.Column="0" Grid.Row="4" Margin="3" Text="Links" FontWeight="Bold" HorizontalAlignment="Right"/>
             <StackPanel Grid.Column="1" Grid.Row="4" Orientation="Horizontal">

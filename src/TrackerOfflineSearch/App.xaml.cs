@@ -1,5 +1,4 @@
 ﻿using System.Windows;
-using BBParser;
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
 using Microsoft.Extensions.Configuration;
@@ -11,7 +10,6 @@ using Prism.Unity;
 using TrackerOfflineSearch.Helpers;
 using TrackerOfflineSearch.Services;
 using TrackerOfflineSearch.Services.Implementation;
-using TrackerOfflineSearch.ViewModels;
 using TrackerOfflineSearch.Views;
 using Unity;
 using Unity.Microsoft.DependencyInjection;
@@ -33,11 +31,11 @@ public partial class App : PrismApplication
 
         serviceCollection
             .AddSingleton<IConfiguration>(config)
-            .AddLogging(loggingBuilder => {
+            .AddLogging(loggingBuilder => 
                 loggingBuilder
                     .AddConfiguration(config.GetSection("Logging"))
-                    .AddDebug();
-            });
+                    .AddDebug()
+            );
 
         var container = new UnityContainer();
         container.BuildServiceProvider(serviceCollection);
@@ -65,7 +63,7 @@ public partial class App : PrismApplication
 
     protected override Window CreateShell()
     {
-        var w = Container.Resolve<MainWindow>();
+        var w = this.Container.Resolve<MainWindow>();
         return w;
     }
 

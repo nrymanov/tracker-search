@@ -9,5 +9,3 @@ public class MainWindowViewModel : ViewModelBase<MainWindowViewModel>
     {
     }
 }
-
-

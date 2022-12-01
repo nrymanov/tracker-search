@@ -8,7 +8,7 @@ namespace TrackerOfflineSearch.Helpers;
 
 public class FileSizeToStringConverter : IValueConverter
 {
-    private static readonly string[] Suffixes = { " B", " KB", " MB", " GB", " TB", " PB", " EB" }; //Longs run out around EB
+    //private static readonly string[] Suffixes = { " B", " KB", " MB", " GB", " TB", " PB", " EB" }; //Longs run out around EB
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
@@ -31,11 +31,10 @@ public class FileSizeToStringConverter : IValueConverter
     }
 
     [DllImport("Shlwapi.dll", CharSet = CharSet.Auto)]
-    public static extern long StrFormatByteSize(
+    private static extern long StrFormatByteSize(
             long fileSize
             , [MarshalAs(UnmanagedType.LPTStr)] StringBuilder buffer
             , int bufferSize);
-
 
     /// <summary>
     /// Converts a numeric value into a string that represents the number expressed as a size value in bytes, kilobytes, megabytes, or gigabytes, depending on the size.
