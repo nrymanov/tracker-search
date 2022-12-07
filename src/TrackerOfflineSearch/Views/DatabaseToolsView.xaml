@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="TrackerOfflineSearch.Views.SearchToolsView"
+﻿<UserControl x:Class="TrackerOfflineSearch.Views.DatabaseToolsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -6,7 +6,7 @@
              xmlns:prism="http://prismlibrary.com/"
              xmlns:local="clr-namespace:TrackerOfflineSearch.Views" 
              xmlns:vm="clr-namespace:TrackerOfflineSearch.ViewModels" 
-             d:DataContext="{d:DesignInstance Type=vm:SearchToolsViewModel}"
+             d:DataContext="{d:DesignInstance Type=vm:DatabaseToolsViewModel}"
              mc:Ignorable="d" 
              d:DesignHeight="250" 
              d:DesignWidth="400"
@@ -32,7 +32,7 @@
 
         <TextBlock Grid.Column="0" Grid.Row="2" Grid.RowSpan="2" Margin="3" Text="Tools" FontWeight="Bold"/>
         <StackPanel Grid.Column="1" Grid.Row="2" Orientation="Horizontal">
-            <TextBlock Margin="3" ><Hyperlink><Run Text="Import"/></Hyperlink></TextBlock>
+            <TextBlock Margin="3" ><Hyperlink Command="{Binding ImportCommand, Mode=OneWay}"><Run Text="Import"/></Hyperlink></TextBlock>
             <TextBlock Margin="3" ><Hyperlink><Run Text="Optimize"/></Hyperlink></TextBlock>
         </StackPanel>
     </Grid>

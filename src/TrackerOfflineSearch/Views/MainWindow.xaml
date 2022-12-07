@@ -6,11 +6,13 @@
         xmlns:prism="http://prismlibrary.com/"
         xmlns:local="clr-namespace:TrackerOfflineSearch.Views" 
         xmlns:vm="clr-namespace:TrackerOfflineSearch.ViewModels" 
+        xmlns:helpers="clr-namespace:TrackerOfflineSearch.Helpers" 
         d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel}"
-        mc:Ignorable="d"
+        mc:Ignorable="d"        
         Title="{Binding Title}" 
-        Height="450" 
-        Width="800">
+        d:DesignHeight="450" d:DesignWidth="800" 
+        WindowStartupLocation="Manual"
+        >
     <Window.Resources>
         <Style x:Key="GridSplitterPreviewStyle">
             <Setter Property="Control.Template">
@@ -59,34 +61,37 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <GroupBox Header="Search" Grid.Column="0" Grid.Row="0" Margin="5"
+        <!-- Column 0 -->
+        <GroupBox Grid.Column="0" Grid.Row="0"
+                  Margin="5"
+                  Header="Search" 
                   prism:RegionManager.RegionName="{x:Static local:RegionNames.SearchFormRegion}"
                   />
 
-        <ContentControl Grid.Column="0" Grid.Row="1" Margin="5, 0, 5, 5"
+        <ContentControl Grid.Column="0" Grid.Row="1" 
+                        Margin="5, 0, 5, 5"
                         prism:RegionManager.RegionName="{x:Static local:RegionNames.SearchResultRegion}"
                         />
 
-        <GridSplitter Style="{DynamicResource GridSplitterStyle1}" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" 
-                          HorizontalAlignment="Center" VerticalAlignment="Stretch" Width="9" ShowsPreview="True"/>
+        <GroupBox Grid.Column="0" Grid.Row="2" Grid.RowSpan="2"
+                  Margin="5, 0, 5, 5"
+                  Header="Database"
+                  prism:RegionManager.RegionName="{x:Static local:RegionNames.DatabaseToolsRegion}"/>
+        
+        <!-- Column 1 -->
+        <GridSplitter Grid.Column="1" Grid.Row="0" Grid.RowSpan="3"
+                      Style="{DynamicResource GridSplitterStyle1}"
+                      HorizontalAlignment="Center" VerticalAlignment="Stretch" 
+                      Width="9" 
+                      ShowsPreview="True"/>
 
-        <Grid Grid.Column="2" Grid.Row="0" Grid.RowSpan="2" Margin="5">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-
-            <!--<GroupBox Grid.Row="0" Header="Database"
-                      prism:RegionManager.RegionName="{x:Static local:RegionNames.SearchToolsRegion}"/>-->
-
-            <GroupBox Grid.Row="1" Header="Post"
-                      prism:RegionManager.RegionName="{x:Static local:RegionNames.PostInfoViewRegion}"/>
-        </Grid>
-
-        <!--<ContentControl Grid.Column="2" Grid.Row="0" Grid.RowSpan="2" Margin="5"
-                        prism:RegionManager.RegionName="{x:Static local:RegionNames.SearchToolsRegion}"
-                        />-->
+        <!-- Column 2 -->
+        <GroupBox Grid.Column="2" Grid.Row="0" Grid.RowSpan="3" 
+                  Margin="5"
+                  Header="Post"
+                  prism:RegionManager.RegionName="{x:Static local:RegionNames.PostInfoViewRegion}"/>
     </Grid>
 </Window>

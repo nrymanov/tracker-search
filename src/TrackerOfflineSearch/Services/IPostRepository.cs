@@ -15,6 +15,4 @@ public interface IPostRepository
     IObservable<IChangeSet<Post>> Connect();
 
     IReadOnlyList<string> Forums { get; }
-
-    IWriteSession NewWriteSession();
 }

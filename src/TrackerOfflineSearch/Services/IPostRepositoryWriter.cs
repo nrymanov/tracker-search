@@ -1,16 +1,18 @@
 ﻿using System;
+using System.Collections.Generic;
 using Lucene.Net.Store;
 using TrackerOfflineSearch.Domain;
 
 namespace TrackerOfflineSearch.Services;
 
-public interface IWriteSession : IDisposable
+public interface IPostRepositoryWriter : IDisposable
 {
     void DeleteAll();
 
-    RAMDirectory CreateChunk(Post[] posts);
+    int Add(IEnumerable<Post> posts);
 
-    int Add(RAMDirectory index);
+    //RAMDirectory CreateChunk(Post[] posts);
+    //int Add(RAMDirectory index);
 
     void Optimize();
 

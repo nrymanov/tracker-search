@@ -6,6 +6,8 @@ namespace TrackerOfflineSearch.ViewModels;
 
 public class PostCellViewModel : ReactiveObject
 {
+    #region Constructor
+
     public PostCellViewModel(Post post)
     {
         this.Post = post ?? throw new ArgumentNullException(nameof(post));
@@ -14,6 +16,10 @@ public class PostCellViewModel : ReactiveObject
         this.Created = post.Created;
         this.Size = post.Size;
     }
+
+    #endregion
+
+    #region Public properties & methods
 
     public Post Post { get; }
 
@@ -24,4 +30,6 @@ public class PostCellViewModel : ReactiveObject
     public DateTime Created { get; }
 
     public long Size { get; }
+
+    #endregion
 }

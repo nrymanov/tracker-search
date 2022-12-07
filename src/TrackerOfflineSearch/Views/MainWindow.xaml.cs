@@ -1,5 +1,7 @@
 ﻿using System.Windows;
+using Microsoft.Extensions.Logging;
 using Prism.Regions;
+using TrackerOfflineSearch.Settings;
 
 namespace TrackerOfflineSearch.Views;
 
@@ -8,12 +10,14 @@ namespace TrackerOfflineSearch.Views;
 /// </summary>
 public partial class MainWindow : Window
 {
-    private readonly IRegionManager regionManager;
+    private readonly IPlacement<MainWindow> placement;
 
-    public MainWindow(IRegionManager regionManager)
+    public MainWindow(IPlacement<MainWindow> placement)
     {
-        InitializeComponent();
+        this.placement = placement ?? throw new System.ArgumentNullException(nameof(placement));
 
-        this.regionManager = regionManager;
+        this.InitializeComponent();
+
+        this.placement.Attach(this);
     }
 }

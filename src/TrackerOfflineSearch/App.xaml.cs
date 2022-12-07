@@ -10,6 +10,9 @@ using Prism.Unity;
 using TrackerOfflineSearch.Helpers;
 using TrackerOfflineSearch.Services;
 using TrackerOfflineSearch.Services.Implementation;
+using TrackerOfflineSearch.Settings;
+using TrackerOfflineSearch.UpdateWizard.ViewModels;
+using TrackerOfflineSearch.UpdateWizard.Views;
 using TrackerOfflineSearch.Views;
 using Unity;
 using Unity.Microsoft.DependencyInjection;
@@ -19,6 +22,7 @@ namespace TrackerOfflineSearch;
 /// <summary>
 /// Interaction logic for App.xaml
 /// </summary>
+/// 
 public partial class App : PrismApplication
 {
     protected override IContainerExtension CreateContainerExtension()
@@ -31,7 +35,8 @@ public partial class App : PrismApplication
 
         serviceCollection
             .AddSingleton<IConfiguration>(config)
-            .AddLogging(loggingBuilder => 
+            .Configure<AppSettings>(config.GetSection("Application"))
+            .AddLogging(loggingBuilder =>
                 loggingBuilder
                     .AddConfiguration(config.GetSection("Logging"))
                     .AddDebug()
@@ -47,25 +52,24 @@ public partial class App : PrismApplication
     {
         containerRegistry
             .RegisterSingleton<IFileSystem, FileSystem>()
+            .RegisterSingleton<IPlacementFactory, PlacementFactory>()
+            .RegisterSingleton(typeof(IPlacement<>), typeof(Placement<>))
             .RegisterSingleton<Analyzer>(() => new StandardAnalyzer(AppConst.SearchEngineVersion))
             .RegisterSingleton<IPostMapper, PostMapper>()
+            .RegisterSingleton<IArchiveManager, ArchiveManager>()
             .RegisterSingleton<IQueryBuilder, QueryBuilder>()
             .RegisterSingleton<IPostRepository, PostRepository>()
+            .Register<IPostRepositoryWriter, PostRepositoryWriter>()
+            .Register<IImportManager, ImportManager>()
             .RegisterSingleton<IBBTextConverter, BBTextConverter>()
             ;
 
-        //containerRegistry
-        //    .RegisterForNavigation<HistoryView, HistoryViewModel>();
-
-        //containerRegistry
-        //    .RegisterSingleton<SearchViewModel>();
+        containerRegistry
+            .RegisterDialog<RepositoryWizardView, RepositoryWizardViewModel>()
+            ;
     }
 
-    protected override Window CreateShell()
-    {
-        var w = this.Container.Resolve<MainWindow>();
-        return w;
-    }
+    protected override Window CreateShell() => this.Container.Resolve<MainWindow>();
 
     protected override void InitializeShell(Window shell)
     {
@@ -76,7 +80,7 @@ public partial class App : PrismApplication
             // Main views
             .RegisterViewWithRegion(RegionNames.SearchFormRegion, typeof(QueryEditorView))
             .RegisterViewWithRegion(RegionNames.SearchResultRegion, typeof(SearchResultView))
-            .RegisterViewWithRegion(RegionNames.SearchToolsRegion, typeof(SearchToolsView))
+            .RegisterViewWithRegion(RegionNames.DatabaseToolsRegion, typeof(DatabaseToolsView))
             .RegisterViewWithRegion(RegionNames.PostInfoViewRegion, typeof(PostInfoView))
             ;
 

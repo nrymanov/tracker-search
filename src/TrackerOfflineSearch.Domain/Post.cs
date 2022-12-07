@@ -1,5 +1,4 @@
-﻿using System;
-using System.Web;
+﻿using System.Web;
 
 namespace TrackerOfflineSearch.Domain;
 
@@ -41,7 +40,7 @@ public record class Post
 
     public string MagnetUrl
     {
-        get 
+        get
         {
             var tracker = HttpUtility.UrlEncode(string.Format((this.TrackerId == 1) ? Tracker1Template : TrackerNTemplate, this.TrackerId));
             var title = HttpUtility.UrlEncode(this.Title);

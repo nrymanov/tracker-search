@@ -15,7 +15,6 @@ using Microsoft.Extensions.Logging;
 using Prism.Events;
 using TrackerOfflineSearch.Domain;
 using TrackerOfflineSearch.Events;
-using TrackerOfflineSearch.Helpers;
 
 namespace TrackerOfflineSearch.Services.Implementation;
 
@@ -24,6 +23,7 @@ public class PostRepository : IPostRepository
     #region Constructor
 
     public PostRepository(
+        Func<IPostRepositoryWriter> writerFactory,
         IEventAggregator eventAggregator,
         IPostMapper mapper, 
         IFileSystem fs, 
@@ -56,7 +56,8 @@ public class PostRepository : IPostRepository
 
         this.logger.LogDebug("Store index in \"{indexPath}\" folder", this.indexPath);
 
-        using var ws = this.NewWriteSession();
+        // TODO 00 initialize repository on app startup
+        using var ws = writerFactory();
         ws.Commit();
     }
 
@@ -74,13 +75,21 @@ public class PostRepository : IPostRepository
     {
         get 
         {
-            return 
-                this.ReadIndex(r => {
-                Fields fields = MultiFields.GetFields(r.Reader);
-                Terms terms = fields.GetTerms(Post.ForumNameField);
-                TermsEnum iterator = terms.GetEnumerator(null);
-
+            return this.ReadIndex(r =>
+            {
                 var result = new List<string>();
+                Fields fields = MultiFields.GetFields(r.Reader);
+                if (fields is null)
+                    return result;
+
+                Terms terms = fields.GetTerms(Post.ForumNameField);
+                if (terms is null)
+                    return result;
+
+                TermsEnum iterator = terms.GetEnumerator(null);
+                if (iterator is null)
+                    return result;
+
                 while (iterator.MoveNext())
                 {
                     result.Add(iterator.Term.Utf8ToString());
@@ -89,8 +98,6 @@ public class PostRepository : IPostRepository
             });
         }
     }
-
-    public IWriteSession NewWriteSession() => new WriteSession(this.indexPath, this.analyzer, this.mapper, this.logger);
 
     #endregion
 
@@ -138,88 +145,6 @@ public class PostRepository : IPostRepository
         }
     }
 
-    private class WriteSession : IWriteSession
-    {
-        public WriteSession(string indexPath, Analyzer analyzer, IPostMapper mapper, ILogger<PostRepository> logger)
-        {
-            this._indexPath = indexPath;
-            this._analyzer = analyzer;
-            this._mapper = mapper;
-            this._logger = logger;
-
-            this._indexConfig = new IndexWriterConfig(AppConst.SearchEngineVersion, this._analyzer) 
-            { 
-                OpenMode = OpenMode.CREATE_OR_APPEND,
-                //RAMBufferSizeMB = 1024,
-            };
-
-            this._directory = FSDirectory.Open(this._indexPath);
-            this._writer = new IndexWriter(this._directory, this._indexConfig);
-        }
-
-        public void DeleteAll()
-        {
-            using var p = Profiler.Start(this._logger);
-            this._writer.DeleteAll();
-        }
-
-        public RAMDirectory CreateChunk(Post[] posts)
-        {
-            using var p = Profiler.Start(this._logger);
-
-            var dir = new RAMDirectory();
-            using var writer = new IndexWriter(dir, this._indexConfig);
-
-            writer.AddDocuments(posts.Select(this._mapper.ToRepository));
-
-            return dir;
-        }
-
-        public int Add(RAMDirectory index)
-        {
-            using var p = Profiler.Start(this._logger);
-
-            if (index is null)
-                throw new ArgumentNullException(nameof(index));
-
-            this._writer.AddIndexes(new[] { index });
-
-            return this._writer.NumDocs;
-        }
-
-        public void Optimize()
-        {
-            using var p = Profiler.Start(this._logger);
-            this._writer.ForceMerge(1);
-        }
-
-        public void Commit()
-        {
-            using var p = Profiler.Start(this._logger);
-            this._writer.Commit();
-        }
-
-        public void Rollback()
-        {
-            using var p = Profiler.Start(this._logger);
-            this._writer.Rollback();
-        }
-
-        public void Dispose()
-        {
-            this._writer.Dispose();
-            this._directory.Dispose();
-        }
-
-        private readonly string _indexPath;
-        private readonly Analyzer _analyzer;
-        private readonly IPostMapper _mapper;
-        private readonly ILogger<PostRepository> _logger;
-        private readonly IndexWriterConfig _indexConfig;
-        private readonly FSDirectory _directory;
-        private readonly IndexWriter _writer;
-    }
-
     #endregion
 
     #region Private fields & methods
@@ -251,7 +176,7 @@ public class PostRepository : IPostRepository
                 new SortField(Post.CreatedField, SortFieldType.STRING, true)
                 );
 
-            TopDocs topDocs = searcher.Search(query, 100, sort);
+            TopDocs topDocs = searcher.Search(query, 500, sort);
             ScoreDoc[] hits = topDocs.ScoreDocs;
 
             if (token.IsCancellationRequested)

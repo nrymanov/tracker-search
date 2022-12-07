@@ -8,6 +8,8 @@ namespace TrackerOfflineSearch.Services.Implementation;
 
 public class PostMapper : IPostMapper
 {
+    #region IPostMapper implementation
+
     public Post ToDomain(Document doc)
     {
         if (doc is null)
@@ -100,4 +102,6 @@ public class PostMapper : IPostMapper
         };
         return doc;
     }
+
+    #endregion
 }

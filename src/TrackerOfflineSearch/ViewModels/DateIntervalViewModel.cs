@@ -6,6 +6,8 @@ namespace TrackerOfflineSearch.ViewModels;
 
 public class DateIntervalViewModel : ReactiveObject, IDateInterval
 {
+    #region Constructor
+
     public DateIntervalViewModel(DateIntervalKind kind)
     {
         this.Kind = kind;
@@ -25,6 +27,10 @@ public class DateIntervalViewModel : ReactiveObject, IDateInterval
         this.UpdateTitle();
     }
 
+    #endregion
+
+    #region IDateInterval implementation
+
     public DateIntervalKind Kind
     {
         get => this._kind;
@@ -37,11 +43,19 @@ public class DateIntervalViewModel : ReactiveObject, IDateInterval
         private set => this.RaiseAndSetIfChanged(ref this._dates, value);
     }
 
+    #endregion
+
+    #region Public proprties & methods
+
     public string Title
     {
         get => this._title;
         private set => this.RaiseAndSetIfChanged(ref this._title, value);
     }
+
+    #endregion
+
+    #region Private proprties & methods
 
     private void UpdateTitle()
     {
@@ -61,4 +75,6 @@ public class DateIntervalViewModel : ReactiveObject, IDateInterval
     private DateIntervalKind _kind;
     private (DateTime?, DateTime?) _dates;
     private string _title;
+
+    #endregion
 }

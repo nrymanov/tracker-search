@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Windows.Controls;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace TrackerOfflineSearch.Helpers;
 
@@ -13,15 +13,9 @@ public static class WebBrowserBehaviors
         new UIPropertyMetadata(null, BindableSourcePropertyChanged)
     );
 
-    public static object GetBindableSource(DependencyObject obj)
-    {
-        return (string)obj.GetValue(BindableSourceProperty);
-    }
+    public static object GetBindableSource(DependencyObject obj) => (string)obj.GetValue(BindableSourceProperty);
 
-    public static void SetBindableSource(DependencyObject obj, object value)
-    {
-        obj.SetValue(BindableSourceProperty, value);
-    }
+    public static void SetBindableSource(DependencyObject obj, object value) => obj.SetValue(BindableSourceProperty, value);
 
     public static void BindableSourcePropertyChanged(DependencyObject o, DependencyPropertyChangedEventArgs e)
     {

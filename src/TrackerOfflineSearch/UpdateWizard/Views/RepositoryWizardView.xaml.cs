@@ -13,16 +13,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace TrackerOfflineSearch.Views
+namespace TrackerOfflineSearch.UpdateWizard.Views;
+/// <summary>
+/// Interaction logic for RepositoryWizardView.xaml
+/// </summary>
+public partial class RepositoryWizardView : UserControl
 {
-    /// <summary>
-    /// Interaction logic for ToolsView.xaml
-    /// </summary>
-    public partial class SearchToolsView : UserControl
+    public RepositoryWizardView()
     {
-        public SearchToolsView()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }
