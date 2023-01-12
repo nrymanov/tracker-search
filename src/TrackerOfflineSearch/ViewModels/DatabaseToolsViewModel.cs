@@ -54,7 +54,13 @@ public class DatabaseToolsViewModel : ViewModelBase<DatabaseToolsViewModel>
 
     private void UpdateReporitoryInfo() => this.TotalItems = this.repository.TotalItems;
 
-    private void StartImport() => this.dialogService.ShowDialog(nameof(RepositoryWizardView), _ => this.EventAggregator.GetEvent<ReporitoryChangedEvent>().Publish());
+    private void StartImport()
+    {
+        this.dialogService.ShowDialog(
+            nameof(RepositoryWizardView),
+            _ => this.EventAggregator.GetEvent<ReporitoryChangedEvent>().Publish()
+        );
+    }
 
     private readonly IPostRepository repository;
     private readonly IDialogService dialogService;

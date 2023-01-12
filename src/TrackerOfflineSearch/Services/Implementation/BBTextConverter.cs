@@ -21,54 +21,64 @@ public class BBTextConverter : IBBTextConverter
 
             // Urls
             new SimpleReplacer(@"\[url=(?<path>[^\]]+)\]", "<a href=\"${path}\" class=\"post-link\">"),
-            new SimpleReplacer(@"\[/url\]", "</a>"),
+            new SimpleReplacer(@"\[/url\]",                "</a>"),
 
             // Text styles
-            new SimpleReplacer(@"\[b\]", "<span class=\"post-bold\">"),
+            new SimpleReplacer(@"\[b\]",  "<span class=\"post-bold\">"),
             new SimpleReplacer(@"\[/b\]", "</span>"),
 
-            new SimpleReplacer(@"\[i\]", "<span class=\"post-italic\">"),
+            new SimpleReplacer(@"\[i\]",  "<span class=\"post-italic\">"),
             new SimpleReplacer(@"\[/i\]", "</span>"),
 
-            new SimpleReplacer(@"\[u\]", "<span class=\"post-underline\">"),
+            new SimpleReplacer(@"\[u\]",  "<span class=\"post-underline\">"),
             new SimpleReplacer(@"\[/u\]", "</span>"),
 
-            new SimpleReplacer(@"\[s\]", "<span class=\"post-strikethrough\">"),
+            new SimpleReplacer(@"\[s\]",  "<span class=\"post-strikethrough\">"),
             new SimpleReplacer(@"\[/s\]", "</span>"),
+
+            // [clear]
+            new SimpleReplacer(@"\[clear\]", "<div class=\"clear\">&nbsp;</div>"),
 
             // [color=colorName|colorCode]
             new SimpleReplacer(@"\[color=(?<color>[^\]]+)\]", "<span style=\"color: ${color};\">"),
-            new SimpleReplacer(@"\[/color\]", "</span>"),
+            new SimpleReplacer(@"\[/color\]",                 "</span>"),
             
             // [size=fontsize]
             new SimpleReplacer(@"\[size=(?<size>\d+)\]", "<span style=\"font-size: ${size}px; line-height: normal;\">"),
             new SimpleReplacer(@"\[/size\]",             "</span>"),
 
             // [pre]
-            new SimpleReplacer(@"\[pre\]", "<pre class=\"post-pre\">"),
+            new SimpleReplacer(@"\[pre\]",  "<pre class=\"post-pre\">"),
             new SimpleReplacer(@"\[/pre\]", "</pre>"),
 
             // [font=fontname]
             new SimpleReplacer(@"\[font=(?<font>[^\]]+)\]", "<span class=\"post-font-${font}\">"),
             new SimpleReplacer(@"\[/font\]",                "</span>"),
 
-            // [align=center|left|right]
-            new SimpleReplacer(@"\[align=(?<align>center|left|right)\]", "<span class=\"post-align post-align-${align}\">"),
-            new SimpleReplacer(@"\[/align\]", "</span>"),
+            // [align=center|left|right|justify]
+            new SimpleReplacer(@"\[align=(?<align>center|left|right|justify)\]", "<span class=\"post-align post-align-${align}\">"),
+            new SimpleReplacer(@"\[/align\]",                                    "</span>"),
 
             // Lists
             new SimpleReplacer(@"\[\*\](?<value>.*?)(?=\[(\*|/list)\])",         "<li>${value}</li>"),
-            new SimpleReplacer(@"\[list\](?<value>.*?)\[/list\]",                "<ol>${value}</ol>"),
-            new SimpleReplacer(@"\[list=(?<type>1|a|i)\](?<value>.*?)\[/list\]", "<ol type=\"${type}\">${value}</ol>"),
-        
+            new SimpleReplacer(@"\[list=(?<type>1|a|i)\]", "<ol type=\"${type}\">"),
+            new SimpleReplacer(@"\[list\]",                "<ol>"),
+            new SimpleReplacer(@"\[/list\]",               "</ol>"),
+
             // [spoiler(=spoilerTitle)]
-            new SimpleReplacer(@"\[spoiler=\""(?<title>[^""]*?)\""\]", "<div class=\"sp-wrap clearfix\"><div class=\"sp-head folded\"><span>${title}</span></div><div class=\"sp-body clearfix\">"),
-            new SimpleReplacer(@"\[spoiler\]",                         "<div class=\"sp-wrap clearfix\"><div class=\"sp-head folded\"><span>скрытый текст</span></div><div class=\"sp-body clearfix\">"),
-            new SimpleReplacer(@"\[/spoiler\]", "</div></div>"),
-        
+            new SimpleReplacer(@"\[spoiler=\""(?<title>.*?)\""\]", "<div class=\"sp-wrap clearfix\"><div class=\"sp-head folded\"><span>${title}</span></div><div class=\"sp-body clearfix\">"),
+            new SimpleReplacer(@"\[spoiler\]",                     "<div class=\"sp-wrap clearfix\"><div class=\"sp-head folded\"><span>скрытый текст</span></div><div class=\"sp-body clearfix\">"),
+            new SimpleReplacer(@"\[/spoiler\]",                    "</div></div>"),
+
+            // [box=align,bordercolor]
+            // [box=align]
+            // [box=bordercolor]
             // [box]
-            new SimpleReplacer(@"\[box\]", "<div class=\"post-box-default\"><div class=\"post-box\">"),
-            new SimpleReplacer(@"\[/box\]", "</div></div>"),
+            new SimpleReplacer(@"\[box=(?<align>center|left|right),(?<bordercolor>[^\]]+)\]", "<div class=\"post-box-${align}\"><div class=\"post-box\" style=\"border-color: ${bordercolor};\">"),
+            new SimpleReplacer(@"\[box=(?<align>center|left|right)\]",                        "<div class=\"post-box-${align}\"><div class=\"post-box\">"),
+            new SimpleReplacer(@"\[box=(?<bordercolor>[^\],]+)\]",                            "<div class=\"post-box-default\"><div class=\"post-box\" style=\"border-color: ${bordercolor};\">"),
+            new SimpleReplacer(@"\[box\]",                                                    "<div class=\"post-box-default\"><div class=\"post-box\">"),
+            new SimpleReplacer(@"\[/box\]",                                                   "</div></div>"),
         };
 
         var assembly = Assembly.GetExecutingAssembly();
@@ -87,7 +97,7 @@ public class BBTextConverter : IBBTextConverter
         // \r\n => \n, \n => <br>
 
         var postBody = this.tagReplacers.Aggregate(
-            bbText.Replace("\r\n", "\n").Replace("\n", "<br>"), 
+            bbText.Replace("\r\n", "\n").Replace("\n", "<br>"),
             (text, replacer) => replacer.Replace(text)
         );
 

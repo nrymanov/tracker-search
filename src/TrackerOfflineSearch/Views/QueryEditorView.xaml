@@ -65,9 +65,31 @@
         <TextBlock Grid.Column="0" Grid.Row="2" Margin="3" 
                        VerticalAlignment="Center" HorizontalAlignment="Right"
                        Text="Forum"/>
-        <ComboBox Grid.Column="1" Grid.Row="2" Grid.ColumnSpan="5" Margin="3"
-                      ItemsSource="{Binding Forums}" SelectedItem="{Binding ForumFilter}"
-                      />
+        <Grid Grid.Column="1" Grid.Row="2" Grid.ColumnSpan="5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Margin="3">
+                <Hyperlink Command="{Binding SelectForumCommand, Mode=OneWay}"><Run Text="{Binding ForumFilter, TargetNullValue=Select forum}"/></Hyperlink>
+            </TextBlock>
+
+            <TextBlock Grid.Column="1" Margin="3" TextTrimming="CharacterEllipsis">
+                <TextBlock.Style>
+                    <Style>
+                        <Setter Property="UIElement.Visibility" Value="Visible"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ForumFilter}" Value="{x:Null}">
+                                <Setter Property="UIElement.Visibility" Value="Collapsed"/>
+                                <Setter Property="UIElement.IsEnabled" Value="False"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+                <Hyperlink Command="{Binding ClearForumCommand, Mode=OneWay}">Clear</Hyperlink>
+            </TextBlock>
+        </Grid>
 
         <!-- Size -->
         <TextBlock Grid.Column="0" Grid.Row="3" Margin="3"
@@ -109,7 +131,7 @@
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
-                        </Run.Style>                    
+                        </Run.Style>
                     </Run>
                 </Hyperlink>
         </TextBlock>

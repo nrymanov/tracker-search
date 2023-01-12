@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Controls.Ribbon;
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
 using Microsoft.Extensions.Configuration;
@@ -7,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Prism.Ioc;
 using Prism.Regions;
 using Prism.Unity;
+using TrackerOfflineSearch.ForumSelector;
 using TrackerOfflineSearch.Helpers;
 using TrackerOfflineSearch.Services;
 using TrackerOfflineSearch.Services.Implementation;
@@ -64,9 +66,10 @@ public partial class App : PrismApplication
             .RegisterSingleton<IBBTextConverter, BBTextConverter>()
             ;
 
-        containerRegistry
-            .RegisterDialog<RepositoryWizardView, RepositoryWizardViewModel>()
-            ;
+        containerRegistry.RegisterDialog<RepositoryWizardView, RepositoryWizardViewModel>();
+        
+        containerRegistry.RegisterDialog<ForumSelectorView, ForumSelectorViewModel>();
+        containerRegistry.RegisterDialogWindow<ForumSelectorWindow>(nameof(ForumSelectorWindow));
     }
 
     protected override Window CreateShell() => this.Container.Resolve<MainWindow>();

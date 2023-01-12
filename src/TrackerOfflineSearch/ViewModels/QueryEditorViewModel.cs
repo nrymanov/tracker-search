@@ -1,13 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using Microsoft.Extensions.Logging;
 using Prism.Events;
+using Prism.Services.Dialogs;
 using ReactiveUI;
+using TrackerOfflineSearch.ForumSelector;
 using TrackerOfflineSearch.Services;
 
 namespace TrackerOfflineSearch.ViewModels;
@@ -19,14 +19,14 @@ public class QueryEditorViewModel : ViewModelBase<QueryEditorViewModel>
     public QueryEditorViewModel(
         IQueryBuilder queryBuilder,
         IPostRepository postRepository,
+        IDialogService dialogService,
         IEventAggregator eventAggregator,
         ILogger<QueryEditorViewModel> logger
         ) : base(eventAggregator, logger)
     {
         this.queryBuilder = queryBuilder ?? throw new ArgumentNullException(nameof(queryBuilder));
         this.postRepository = postRepository ?? throw new ArgumentNullException(nameof(postRepository));
-
-        this.Forums = new ObservableCollection<string>(GetToplevelForums(this.postRepository.Forums));
+        this.dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
 
         this.Intervals = new ObservableCollection<DateIntervalViewModel> 
         { 
@@ -36,10 +36,14 @@ public class QueryEditorViewModel : ViewModelBase<QueryEditorViewModel>
             new DateIntervalViewModel(DateIntervalKind.Month),
             new DateIntervalViewModel(DateIntervalKind.Quarter),
             new DateIntervalViewModel(DateIntervalKind.HalfYear),
-            new DateIntervalViewModel(DateIntervalKind.Year)            
+            new DateIntervalViewModel(DateIntervalKind.Year)
         };
 
         this.SelectedInterval = this.Intervals.First();
+
+        this.SelectForumCommand = ReactiveCommand.Create(this.SelectForumExecute);
+
+        this.ClearForumCommand = ReactiveCommand.Create(() => { this.ForumFilter = null; });
 
         this.ChangeQueryTypeCommand = ReactiveCommand.Create(() =>
         {
@@ -102,11 +106,6 @@ public class QueryEditorViewModel : ViewModelBase<QueryEditorViewModel>
         set => this.RaiseAndSetIfChanged(ref this.toSizeFilter, value);
     }
 
-    public ObservableCollection<string> Forums 
-    {
-        get;
-    }
-
     public ObservableCollection<DateIntervalViewModel> Intervals
     { 
         get;
@@ -124,72 +123,24 @@ public class QueryEditorViewModel : ViewModelBase<QueryEditorViewModel>
         set => this.RaiseAndSetIfChanged(ref this.isAdvancedQuery, value);
     }
 
+    public ReactiveCommand<Unit, Unit> SelectForumCommand { get; }
+
+    public ReactiveCommand<Unit, Unit> ClearForumCommand { get; }
+
     public ReactiveCommand<Unit, Unit> ChangeQueryTypeCommand { get; }
 
     #endregion
 
     #region Private fields & methods
 
-    [DebuggerDisplay("Name = {Name} Path = {Path}")]
-    private class Forum
+    private void SelectForumExecute()
     {
-        public string Name { get; init; }
-
-        public Forum? Parent { get; init; }
-
-        public string Path 
-        {
-            get 
-            {
-                if (this.Parent is null)
-                    return this.Name;
-
-                return $"{this.Parent.Path} - {this.Name}";
-            }
-        }
-
-        public List<Forum> Children { get; } = new List<Forum>();
+        this.dialogService.ShowSelectForumDialog(this.ForumFilter, ff => this.ForumFilter = ff);
     }
-
-    private static IEnumerable<Forum> BuildForumTree(IEnumerable<string> forums)
-    {
-        var forumCache = new Dictionary<string, Forum>();
-
-        var topForums = new List<Forum>();
-
-        foreach (var fn in forums)
-        {
-            var parts = fn.Split(" - ");
-
-            Forum? parentForum = null;
-
-            for (int i = 0; i < parts.Length; i++)
-            {
-                var f = new Forum { Name = parts[i], Parent = parentForum };
-                if (forumCache.TryGetValue(f.Path, out var cached))
-                {
-                    parentForum = cached;
-                }
-                else
-                {
-                    if (parentForum is null)
-                        topForums.Add(f);
-                    else
-                        parentForum.Children.Add(f);
-                    forumCache[f.Path] = f;
-                    parentForum = f;
-                }
-            }
-        }
-
-        return topForums;
-    }
-
-    private static IEnumerable<string> GetToplevelForums(IEnumerable<string> forums) => BuildForumTree(forums).Select(f => f.Name);
 
     private readonly IQueryBuilder queryBuilder;
     private readonly IPostRepository postRepository;
-
+    private readonly IDialogService dialogService;
     private string? titleFilter;
     private string? contentFilter;
 

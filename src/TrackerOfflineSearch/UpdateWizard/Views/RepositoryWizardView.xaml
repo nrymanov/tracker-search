@@ -48,7 +48,7 @@
         <Separator Grid.Row="1"/>
 
         <!--Buttons (row 2)-->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="{DynamicResource StandardMargin}">
             <Button Content="Next"
                     Style="{DynamicResource StandardButtonStyle}" 
                     Command="{Binding GoNextCommand, Mode=OneWay}" 
