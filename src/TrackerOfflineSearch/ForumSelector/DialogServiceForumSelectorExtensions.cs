@@ -1,5 +1,5 @@
 ﻿using System;
-using Prism.Services.Dialogs;
+using Prism.Dialogs;
 
 namespace TrackerOfflineSearch.ForumSelector;
 

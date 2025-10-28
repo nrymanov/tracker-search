@@ -34,13 +34,13 @@ public class DateIntervalViewModel : ReactiveObject, IDateInterval
     public DateIntervalKind Kind
     {
         get => this._kind;
-        private set => this.RaiseAndSetIfChanged(ref this._kind, value);
+        private init => this.RaiseAndSetIfChanged(ref this._kind, value);
     }
 
     public (DateTime?, DateTime?) Dates
     {
         get => this._dates;
-        private set => this.RaiseAndSetIfChanged(ref this._dates, value);
+        private init => this.RaiseAndSetIfChanged(ref this._dates, value);
     }
 
     #endregion

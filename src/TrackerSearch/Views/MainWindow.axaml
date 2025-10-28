@@ -1,0 +1,81 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TrackerSearch.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:webview="clr-namespace:WebViewControl;assembly=WebViewControl.Avalonia"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="TrackerSearch.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="TrackerSearch"
+        FontSize="12">
+
+  <Grid ColumnDefinitions="300, Auto, *" Margin="5">
+    <!--Список форумов и фильтр-->
+    <Grid RowDefinitions="Auto, *" RowSpacing="3">
+      <TextBox Grid.Row="0"
+               Text="{Binding ForumFilter, UpdateSourceTrigger=PropertyChanged}"
+               Classes="clearButton"
+               Watermark="Фильтр форумов"
+               BorderBrush="LightGray"/>
+
+      <TreeView Grid.Row="1"
+                ItemsSource="{Binding Forums}"
+                SelectedItem="{Binding SelectedForum}"                
+                BorderThickness="1" BorderBrush="LightGray"
+                ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+
+        <TreeView.Styles>
+          <Style Selector="TreeViewItem" x:DataType="vm:ForumViewModel">
+            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+          </Style>
+        </TreeView.Styles>
+
+        <TreeView.ItemTemplate>
+          <TreeDataTemplate ItemsSource="{Binding Forums}">
+            <TextBlock Text="{Binding Name}" 
+                       TextTrimming="CharacterEllipsis"
+                       ToolTip.Tip="{Binding Name}"
+                       />
+          </TreeDataTemplate>
+        </TreeView.ItemTemplate>
+      </TreeView>
+    </Grid>
+
+    <GridSplitter Grid.Column="1" ResizeDirection="Columns" />
+
+    <Grid Grid.Column="2"
+          ColumnDefinitions="400, Auto, *"
+          RowDefinitions="Auto, *"
+          RowSpacing="3">
+
+      <TextBox Grid.Row="0" Grid.ColumnSpan="3"
+               Text="{Binding PostFilter, UpdateSourceTrigger=PropertyChanged}"
+               Classes="clearButton"
+               Watermark="Фильтр по заголовку или содержимому поста"
+               BorderBrush="LightGray"/>
+
+      <DataGrid Grid.Column="0" Grid.Row="1"                
+                ItemsSource="{Binding Posts}"
+                SelectedItem="{Binding SelectedPost}"
+                BorderThickness="1" BorderBrush="LightGray" CanUserResizeColumns="True" CanUserReorderColumns="True" CanUserSortColumns="False">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Заголовок" Binding="{Binding Title}" Width="300" FontSize="12" />
+          <DataGridTextColumn Header="Дата" Binding="{Binding Created}" Width="120" FontSize="12"/>
+          <DataGridTextColumn Header="Форум" Binding="{Binding ForumName}" Width="150" FontSize="12"/>
+        </DataGrid.Columns>
+      </DataGrid>
+
+      <GridSplitter Grid.Column="1" Grid.Row="1" ResizeDirection="Columns" />
+
+      <Border Grid.Column="2" Grid.Row="1"
+              BorderThickness="1" BorderBrush="LightGray">
+        <webview:WebView x:Name="PostContentView" Focusable="True"/>
+      </Border>
+    </Grid>
+
+  </Grid>
+
+
+</Window>

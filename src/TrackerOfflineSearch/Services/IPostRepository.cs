@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using DynamicData;
 using Lucene.Net.Search;
-using TrackerOfflineSearch.Domain;
+using TrackerOfflineSearch.Core.Models;
 
 namespace TrackerOfflineSearch.Services;
 

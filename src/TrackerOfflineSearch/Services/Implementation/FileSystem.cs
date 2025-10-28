@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using Microsoft.Extensions.Options;
 using TrackerOfflineSearch.Settings;
 
 namespace TrackerOfflineSearch.Services.Implementation;
@@ -9,7 +8,7 @@ public class FileSystem : IFileSystem
 {
     #region Constructor
 
-    public FileSystem(IOptions<AppSettings> settings)
+    public FileSystem(IAppSettings settings)
     {
         this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
@@ -42,7 +41,7 @@ public class FileSystem : IFileSystem
 
     #region Private fields & methods
 
-    private readonly IOptions<AppSettings> settings;
+    private readonly IAppSettings settings;
 
     #endregion
 }

@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Linq;
 using Lucene.Net.Analysis;
 using Lucene.Net.Index;
 using Lucene.Net.Store;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using TrackerOfflineSearch.Domain;
+using TrackerOfflineSearch.Core.Models;
 using TrackerOfflineSearch.Helpers;
 using TrackerOfflineSearch.Settings;
 
@@ -18,7 +16,7 @@ public class PostRepositoryWriter : IPostRepositoryWriter
     #region Constructor
 
     public PostRepositoryWriter(
-        IOptions<AppSettings> settings,
+        IAppSettings settings,
         IFileSystem fs, 
         Analyzer analyzer, 
         IPostMapper mapper, 
@@ -26,7 +24,7 @@ public class PostRepositoryWriter : IPostRepositoryWriter
         )
     {
         this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
-        this.indexPath = fs?.MainIndexPath ?? throw new ArgumentNullException(nameof(fs));
+        this.indexPath = fs.MainIndexPath ?? throw new ArgumentNullException(nameof(fs));
         this.analyzer = analyzer ?? throw new ArgumentNullException(nameof(analyzer));
         this.mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -34,7 +32,7 @@ public class PostRepositoryWriter : IPostRepositoryWriter
         var indexConfig = new IndexWriterConfig(AppConst.SearchEngineVersion, this.analyzer)
         {
             OpenMode = OpenMode.CREATE_OR_APPEND,
-            RAMBufferSizeMB = this.settings.Value.Lucene.RAMBufferSizeMB
+            RAMBufferSizeMB = this.settings.RAMBufferSizeMB
         };
 
         this.directory = FSDirectory.Open(this.indexPath);
@@ -115,7 +113,7 @@ public class PostRepositoryWriter : IPostRepositoryWriter
     #region Private fields & methods
 
     private readonly string indexPath;
-    private readonly IOptions<AppSettings> settings;
+    private readonly IAppSettings settings;
     private readonly Analyzer analyzer;
     private readonly IPostMapper mapper;
     private readonly ILogger<PostRepository> logger;

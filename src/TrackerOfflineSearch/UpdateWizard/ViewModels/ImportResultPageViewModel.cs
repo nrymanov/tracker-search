@@ -1,6 +1,4 @@
-﻿using ReactiveUI;
-
-namespace TrackerOfflineSearch.UpdateWizard.ViewModels;
+﻿namespace TrackerOfflineSearch.UpdateWizard.ViewModels;
 
 public class ImportResultPageViewModel : WizardPageViewModel
 {

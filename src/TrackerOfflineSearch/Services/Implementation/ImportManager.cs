@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Linq;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
-using Microsoft.Extensions.Options;
 using ReactiveUI;
-using TrackerOfflineSearch.Domain;
+using TrackerOfflineSearch.Core.Models;
 using TrackerOfflineSearch.Settings;
 
 namespace TrackerOfflineSearch.Services.Implementation;
@@ -15,7 +13,7 @@ public class ImportManager : ReactiveObject, IImportManager
 {
     #region Constructor
 
-    public ImportManager(IArchiveManager archiveManager, Func<IPostRepositoryWriter> writerFactory, IOptions<AppSettings> settings)
+    public ImportManager(IArchiveManager archiveManager, Func<IPostRepositoryWriter> writerFactory, IAppSettings settings)
     {
         this.archiveManager = archiveManager ?? throw new ArgumentNullException(nameof(archiveManager));
         this.writerFactory = writerFactory ?? throw new ArgumentNullException(nameof(writerFactory));
@@ -133,7 +131,7 @@ public class ImportManager : ReactiveObject, IImportManager
         var inBlock = new ActionBlock<string>(
             async path =>
             {
-                foreach (var t in this.archiveManager.GetPosts(path).Chunk(this.settings.Value.Import.ChunkSize))
+                foreach (var t in this.archiveManager.GetPosts(path).Chunk(this.settings.ChunkSize))
                 {
                     ct.ThrowIfCancellationRequested();
 
@@ -148,14 +146,14 @@ public class ImportManager : ReactiveObject, IImportManager
                 ((IDataflowBlock)outBlock).Fault(task.Exception);
             else
                 outBlock.Complete();
-        });
+        }, ct);
 
         return DataflowBlock.Encapsulate(inBlock, outBlock);
     }
 
     private readonly IArchiveManager archiveManager;
     private readonly Func<IPostRepositoryWriter> writerFactory;
-    private readonly IOptions<AppSettings> settings;
+    private readonly IAppSettings settings;
     private readonly CancellationTokenSource cts;
     private int importTotal;
 

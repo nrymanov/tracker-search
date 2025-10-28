@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Reactive;
 using Microsoft.Extensions.Logging;
+using Prism.Dialogs;
 using Prism.Events;
-using Prism.Services.Dialogs;
 using ReactiveUI;
 using TrackerOfflineSearch.Events;
 using TrackerOfflineSearch.Services;

@@ -7,6 +7,7 @@ public class Placement<T> : IPlacement<T> where T : Window
 {
     #region Constructor
 
+    // TODO use IAppSetings instead of IPlacementFactory
     public Placement(IPlacementFactory factory)
     {
         if (factory is null)
@@ -36,7 +37,7 @@ public class Placement<T> : IPlacement<T> where T : Window
     {
         if (sender is T window)
         {
-            if (this.placement.Location != Rect.Empty)
+            if (!this.placement.Location.IsEmpty)
             {
                 window.Left = this.placement.Location.Left;
                 window.Top = this.placement.Location.Top;
@@ -64,7 +65,7 @@ public class Placement<T> : IPlacement<T> where T : Window
                 this.placement.State = WindowState.Normal;
             }
 
-            this.placement.Save();
+            //this.placement.Save();
         }
     }
 

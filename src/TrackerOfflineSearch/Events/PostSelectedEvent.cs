@@ -1,5 +1,5 @@
 ﻿using Prism.Events;
-using TrackerOfflineSearch.Domain;
+using TrackerOfflineSearch.Core.Models;
 
 namespace TrackerOfflineSearch.Events;
 

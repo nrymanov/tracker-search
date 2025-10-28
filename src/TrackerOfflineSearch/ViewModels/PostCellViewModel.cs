@@ -1,6 +1,6 @@
 ﻿using System;
 using ReactiveUI;
-using TrackerOfflineSearch.Domain;
+using TrackerOfflineSearch.Core.Models;
 
 namespace TrackerOfflineSearch.ViewModels;
 

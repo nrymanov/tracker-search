@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using TrackerOfflineSearch.Domain;
+using TrackerOfflineSearch.Core.Models;
 
 namespace TrackerOfflineSearch.Services;
 

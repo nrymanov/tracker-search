@@ -1,44 +1,30 @@
-﻿using System.Configuration;
-using System.Windows;
+﻿using System.Windows;
 
 namespace TrackerOfflineSearch.Settings;
 
-[SettingsGroupName(nameof(Placement))]
-public class Placement : ApplicationSettingsBase, IPlacement
+public class Placement : IPlacement
 {
     #region Constructor
 
-    public Placement(string key)
+    public Placement()
     {
-        this.SettingsKey = key;
     }
 
     #endregion
 
     #region IPlacement implementation
 
-    [UserScopedSetting]
-    [DefaultSettingValue(null)]
-    public Rect Location 
+    public Rect Location
     {
-        get => (this[LocationKey] is null) ? Rect.Empty : (Rect)this[LocationKey];
-        set => this[LocationKey] = value;
-    }
+        get;
+        set;
+    } = Rect.Empty;
 
-    [UserScopedSetting]
-    [DefaultSettingValue(null)]
     public WindowState State
     {
-        get => (this[StateKey] is null) ? WindowState.Normal : (WindowState)this[StateKey];
-        set => this[StateKey] = value;
+        get;
+        set;
     }
-
-    #endregion
-
-    #region Private fields & methods
-
-    private const string LocationKey = nameof(Location);
-    private const string StateKey = nameof(State);
 
     #endregion
 }

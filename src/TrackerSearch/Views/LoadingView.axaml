@@ -1,0 +1,20 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:TrackerSearch.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="TrackerSearch.Views.LoadingView"
+             x:DataType="vm:LoadingViewModel">
+    <Grid ColumnDefinitions="*, 14*, *" RowDefinitions="*, 14*, Auto, *">
+        <!--Program Logo-->
+        <Svg Grid.Column="1" Grid.Row="1" 
+             Path="/Assets/logo.svg"
+             VerticalAlignment="Stretch"
+             HorizontalAlignment="Stretch"
+        />
+        <TextBlock Grid.Column="1" Grid.Row="2" 
+                   Text="Пожалуйста, подождите..."
+                   HorizontalAlignment="Center"/>
+    </Grid>
+</UserControl>

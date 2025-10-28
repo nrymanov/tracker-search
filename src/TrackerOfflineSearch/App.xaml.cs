@@ -1,13 +1,12 @@
 ﻿using System.Windows;
-using System.Windows.Controls.Ribbon;
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Prism.Ioc;
-using Prism.Regions;
+using Prism.Navigation.Regions;
 using Prism.Unity;
+using Serilog;
+using Serilog.Extensions.Logging;
 using TrackerOfflineSearch.ForumSelector;
 using TrackerOfflineSearch.Helpers;
 using TrackerOfflineSearch.Services;
@@ -17,7 +16,6 @@ using TrackerOfflineSearch.UpdateWizard.ViewModels;
 using TrackerOfflineSearch.UpdateWizard.Views;
 using TrackerOfflineSearch.Views;
 using Unity;
-using Unity.Microsoft.DependencyInjection;
 
 namespace TrackerOfflineSearch;
 
@@ -27,33 +25,21 @@ namespace TrackerOfflineSearch;
 /// 
 public partial class App : PrismApplication
 {
-    protected override IContainerExtension CreateContainerExtension()
-    {
-        var serviceCollection = new ServiceCollection();
-
-        var config = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json")
-            .Build();
-
-        serviceCollection
-            .AddSingleton<IConfiguration>(config)
-            .Configure<AppSettings>(config.GetSection("Application"))
-            .AddLogging(loggingBuilder =>
-                loggingBuilder
-                    .AddConfiguration(config.GetSection("Logging"))
-                    .AddDebug()
-            );
-
-        var container = new UnityContainer();
-        container.BuildServiceProvider(serviceCollection);
-
-        return new UnityContainerExtension(container);
-    }
-
     protected override void RegisterTypes(IContainerRegistry containerRegistry)
     {
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .Enrich.FromLogContext()
+            .WriteTo.Debug()
+            .CreateLogger();
+
+        containerRegistry
+            .RegisterSingleton<ILoggerFactory, SerilogLoggerFactory>()
+            .RegisterSingleton(typeof(ILogger<>), typeof(Logger<>));
+
         containerRegistry
             .RegisterSingleton<IFileSystem, FileSystem>()
+            .RegisterSingleton<IAppSettings, AppSettings>()
             .RegisterSingleton<IPlacementFactory, PlacementFactory>()
             .RegisterSingleton(typeof(IPlacement<>), typeof(Placement<>))
             .RegisterSingleton<Analyzer>(() => new StandardAnalyzer(AppConst.SearchEngineVersion))
@@ -67,7 +53,7 @@ public partial class App : PrismApplication
             ;
 
         containerRegistry.RegisterDialog<RepositoryWizardView, RepositoryWizardViewModel>();
-        
+
         containerRegistry.RegisterDialog<ForumSelectorView, ForumSelectorViewModel>();
         containerRegistry.RegisterDialogWindow<ForumSelectorWindow>(nameof(ForumSelectorWindow));
     }

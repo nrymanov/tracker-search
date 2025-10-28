@@ -1,0 +1,194 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+	<style>
+		img.post-image {
+			margin: 2px 2px 0 0;
+			max-width: 100%;
+			height: auto;
+		}  
+  
+		img.post-image-aligned {
+			margin: 4px 4px 2px;
+			max-width: 33%;
+		}
+  
+		img.post-image-aligned-right {
+			float: right;
+			clear: right;
+		}
+
+		.post-align {
+			margin: 8px auto;
+		}
+	
+		.post-align,.post-br {
+			display: block;
+		}
+
+		.post-hr {
+			display: flex;
+			margin: 8px auto;
+		}
+	
+		.post-align-center {
+			text-align: center;
+		}
+        .post-align-left {
+            text-align: left;
+        }
+        .post-align-right {
+            text-align: right;
+        }
+        .post-align-justify {
+            text-align: justify;
+        }
+
+        .post-bold {
+            font-weight: bold;
+        }
+	
+		.post-underline {
+			text-decoration: underline;
+		}
+
+		.post-italic {
+			font-style: italic;
+		}
+
+		.post-strikethrough {
+			text-decoration: line-through;
+		}
+
+		.sp-wrap {
+			margin: 8px auto;
+		}
+
+		.sp-wrap {
+			width: 98%;
+		}
+	
+		.sp-wrap {
+			border: solid #c3cbd1;
+			border-width: 1px 1px 1px 2px;
+			clear: both;
+		}	
+
+		.sp-wrap {
+			padding: 0;
+			background: #e9e9e6;
+		}
+
+		.sp-head, .sp-body {
+			border: solid #c3cbd1;
+			border-width: 1px 1px 1px 2px;
+			clear: both;
+		}
+
+		.sp-head {
+			text-align: left !important;
+			min-width: 150px;
+			min-height: 14px;
+			border-width: 0;
+			padding: 1px 1px 3px;
+			margin-left: 6px;
+			font-weight: bold;
+			cursor: pointer;
+		}
+	
+		.folded {
+			background: transparent url(https://static.t-ru.org/templates/v1/images/icon_plus_1.gif) no-repeat left center;
+			padding-left: 14px;
+		}	
+	
+		.sp-opened > .sp-head {
+			background: transparent url(https://static.t-ru.org/templates/v1/images/icon_minus_1.gif) no-repeat left center;
+		}		
+	
+		.sp-body {
+			border-width: 1px 0 0 0;
+			display: none;
+			font-weight: normal;
+			background: #f5f5f5;
+			padding: 2px 6px;
+		}
+
+		.sp-opened > .sp-body {
+			display: block;
+		}
+
+		.post-box {
+			display: inline-block;
+			border: 1px solid #a7b4ba;
+			border-radius: 3px;
+			line-height: 150%;
+			margin: 1px 5px;
+			padding: 0 8px 1px;
+		}
+
+		.post-box {		
+			min-width: 250px;
+		}
+
+		.post-box-default {
+			display: inline-block;
+		}
+
+		.post-box-left {
+			float: left;
+		}
+
+		.post-box-right {
+			float: right;
+		}
+
+		.post-box-center {
+			display: table;
+			margin-left: auto;
+			margin-right: auto;
+		}
+
+	</style>
+	
+	<script>
+		(function(e) {
+			e.matches = e.matches || e.mozMatchesSelector || e.msMatchesSelector || e.oMatchesSelector || e.webkitMatchesSelector;
+			e.closest = e.closest || function closest(selector) {
+				if (!this) 
+					return null;
+				if (this.matches(selector)) 
+					return this;
+				if (!this.parentElement) { 
+					return null; 
+				}
+				else {
+					return this.parentElement.closest(selector)
+				}
+			};
+		}(Element.prototype));
+	</script>
+
+</head>
+
+<body>
+	<!-- Post begin -->
+
+	<!-- Post placeholder -->
+
+	<!-- Post end -->
+
+	<script type="text/javascript">
+		function toggleSpoiler(e) {
+			e.target.closest('.sp-wrap').classList.toggle('sp-opened');
+		}
+
+		var headers = document.getElementsByClassName('sp-head');
+		for (var i = 0; i < headers.length; i++) {
+			headers[i].addEventListener('click', toggleSpoiler);
+		}
+	</script>
+</body>
+</html>

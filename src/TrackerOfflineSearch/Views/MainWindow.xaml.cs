@@ -1,6 +1,4 @@
 ﻿using System.Windows;
-using Microsoft.Extensions.Logging;
-using Prism.Regions;
 using TrackerOfflineSearch.Settings;
 
 namespace TrackerOfflineSearch.Views;

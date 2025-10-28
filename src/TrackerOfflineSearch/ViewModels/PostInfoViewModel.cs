@@ -4,7 +4,7 @@ using System.Reactive;
 using Microsoft.Extensions.Logging;
 using Prism.Events;
 using ReactiveUI;
-using TrackerOfflineSearch.Domain;
+using TrackerOfflineSearch.Core.Models;
 using TrackerOfflineSearch.Events;
 using TrackerOfflineSearch.Services;
 

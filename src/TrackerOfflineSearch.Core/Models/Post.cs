@@ -1,8 +1,8 @@
-﻿using System.Web;
+using System.Web;
 
-namespace TrackerOfflineSearch.Domain;
+namespace TrackerOfflineSearch.Core.Models;
 
-public record class Post
+public record Post
 {
     public const string IdField = nameof(Id);
     public const string CreatedField = nameof(Created);
@@ -20,32 +20,57 @@ public record class Post
     private const string TrackerNTemplate = "http://bt{0}.t-ru.org/ann?magnet";
     private const string MagnetUrlTemplate = "magnet:?xt=urn:btih:{0}&tr={1}&dn={2}";
 
+    public static Post Null => new()
+    {
+        Id = 0,
+        Created = DateTime.MinValue,
+        Size = 0,
+        Title = string.Empty,
+        Content = string.Empty,
+        Hash = string.Empty,
+        TrackerId = 0,
+        ForumId = 0,
+        ForumName = string.Empty
+    };
+
     public int Id { get; init; }
+    
     public DateTime Created { get; init; }
+    
     public long Size { get; init; }
 
-    public string Title { get; init; }
+    public string Title { get; init; } = string.Empty;
 
-    public string Content { get; init; }
+    public string Content { get; init; } = string.Empty;
 
-    public string Hash { get; init; }
+    public string Hash { get; init; } = string.Empty;
+
     public int TrackerId { get; init; }
 
     public int ForumId { get; init; }
-    public string ForumName { get; init; }
+    
+    public string ForumName { get; init; } = string.Empty;
 
-    public string Url => string.Format(PostUrlTemplate, this.Id);
+    public int Index { get; init; }
 
-    public string TorrentUrl => string.Format(TorrentUrlTemplate, this.Id);
+    public string Url => string.Format(PostUrlTemplate, Id);
+
+    public string TorrentUrl => string.Format(TorrentUrlTemplate, Id);
+
+    public string TrackerUrl => TrackerId == 1
+        ? Tracker1Template
+        : string.Format(TrackerNTemplate, TrackerId);
 
     public string MagnetUrl
     {
         get
         {
-            var tracker = HttpUtility.UrlEncode(string.Format((this.TrackerId == 1) ? Tracker1Template : TrackerNTemplate, this.TrackerId));
-            var title = HttpUtility.UrlEncode(this.Title);
+            var tracker = HttpUtility.UrlEncode(TrackerUrl);
+            var title = HttpUtility.UrlEncode(Title);
 
-            return string.Format(MagnetUrlTemplate, this.Hash, tracker, title);
+            return string.Format(MagnetUrlTemplate, Hash, tracker, title);
         }
     }
+
+    public bool IsNull => Id == 0;
 }

@@ -1,5 +1,5 @@
 ﻿using System.Windows;
-using Prism.Services.Dialogs;
+using Prism.Dialogs;
 using TrackerOfflineSearch.Helpers;
 using TrackerOfflineSearch.Settings;
 

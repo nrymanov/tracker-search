@@ -13,7 +13,7 @@ using Lucene.Net.Search;
 using Lucene.Net.Store;
 using Microsoft.Extensions.Logging;
 using Prism.Events;
-using TrackerOfflineSearch.Domain;
+using TrackerOfflineSearch.Core.Models;
 using TrackerOfflineSearch.Events;
 
 namespace TrackerOfflineSearch.Services.Implementation;

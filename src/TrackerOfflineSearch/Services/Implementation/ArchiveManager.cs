@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 using System.Xml.Linq;
-using TrackerOfflineSearch.Domain;
+using TrackerOfflineSearch.Core.Models;
 using XZ.NET;
 
 namespace TrackerOfflineSearch.Services.Implementation;
@@ -25,7 +25,7 @@ public class ArchiveManager : IArchiveManager
     {
         using var stream = File.OpenRead(archivePath);
         using var xzStream = new XZInputStream(stream);
-        using var reader = XmlReader.Create(xzStream);
+        using var reader = XmlReader.Create(xzStream, new XmlReaderSettings { Async = true });
         
         reader.MoveToContent();
 

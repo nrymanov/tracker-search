@@ -1,0 +1,125 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="TrackerOfflineSearch.Avalonia.Views.ToolbarView"
+             x:CompileBindings="False">
+
+    <DockPanel Margin="8">
+        <!-- Верхняя служебная панель -->
+        <StackPanel DockPanel.Dock="Top"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    Spacing="8"
+                    Margin="0,0,0,8">
+            <Button Content="📂 Загрузить архив"
+                    Command="{Binding LoadArchiveCommand}" />
+            <Button Content="⚙️ Оптимизировать индекс"
+                    Command="{Binding OptimizeIndexCommand}" />
+            <Button Content="ℹ️ О программе"
+                    Command="{Binding ShowAboutCommand}" />
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Spacing="8" DockPanel.Dock="Top">
+            <TextBox Width="360"
+                     Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
+                     Watermark="Поиск по заголовку и содержимому..." />
+            <ToggleButton Content="Расширенный поиск"
+                          IsChecked="{Binding IsAdvanced}" />
+        </StackPanel>
+        
+        <StackPanel Spacing="8" DockPanel.Dock="Top">
+
+            <!-- Простой режим -->  
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="▲ Свернуть"
+                        Command="{Binding ToggleAdvancedCommand}" />
+                <TextBlock Text="Расширенный поиск"
+                           FontWeight="Bold"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- Расширенный режим -->
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <StackPanel>
+                    <TextBlock Text="Заголовок:"/>
+                    <TextBox Width="220"
+                             Text="{Binding TitleQuery, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+                <StackPanel>
+                    <TextBlock Text="Содержимое:"/>
+                    <TextBox Width="220"
+                             Text="{Binding ContentQuery, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel Orientation="Vertical" Spacing="4">
+                <TextBlock Text="Форум" />
+                <ComboBox ItemsSource="{Binding ForumList}"
+                          SelectedItem="{Binding SelectedForum}" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <StackPanel>
+                    <TextBlock Text="Дата от" />
+                    <CalendarDatePicker SelectedDate="{Binding DateFrom}" />
+                </StackPanel>
+                <StackPanel>
+                    <TextBlock Text="Дата до" />
+                    <CalendarDatePicker SelectedDate="{Binding DateTo}" />
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="Очистить"
+                        Command="{Binding ResetFiltersCommand}" />
+            </StackPanel>
+        </StackPanel>
+        
+        <!-- Панель поиска -->
+        <Expander IsExpanded="{Binding IsAdvanced}" Margin="0,8,0,0">
+            <Expander.Header>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBox Width="360"
+                             Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
+                             Watermark="Поиск...">
+                        <TextBox.KeyBindings>
+                            <KeyBinding Gesture="Enter" Command="{Binding SearchCommand}" />
+                        </TextBox.KeyBindings>
+                    </TextBox>
+                    <Button Content="Искать" Command="{Binding SearchCommand}" />
+                </StackPanel>
+            </Expander.Header>
+
+            <!-- Расширенные фильтры -->
+            <StackPanel Margin="0,8,0,0" Spacing="8">
+                <!-- Форум -->
+                <StackPanel Orientation="Vertical" Spacing="4">
+                    <TextBlock Text="Форум" />
+                    <ComboBox ItemsSource="{Binding ForumList}"
+                              SelectedItem="{Binding SelectedForum}" />
+                </StackPanel>
+
+                <!-- Даты -->
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <StackPanel Orientation="Vertical" Spacing="4">
+                        <TextBlock Text="Дата от" />
+                        <CalendarDatePicker SelectedDate="{Binding DateFrom}" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Vertical" Spacing="4">
+                        <TextBlock Text="Дата до" />
+                        <CalendarDatePicker SelectedDate="{Binding DateTo}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Кнопка сброса -->
+                <Button Content="Сбросить фильтры"
+                        Command="{Binding ResetFiltersCommand}"
+                        HorizontalAlignment="Left" />
+            </StackPanel>
+        </Expander>
+    </DockPanel>
+
+</UserControl>

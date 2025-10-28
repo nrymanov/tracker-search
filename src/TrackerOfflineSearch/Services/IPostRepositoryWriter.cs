@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Lucene.Net.Store;
-using TrackerOfflineSearch.Domain;
+using TrackerOfflineSearch.Core.Models;
 
 namespace TrackerOfflineSearch.Services;
 

@@ -1,6 +1,6 @@
 ﻿using System.Xml.Linq;
 using Lucene.Net.Documents;
-using TrackerOfflineSearch.Domain;
+using TrackerOfflineSearch.Core.Models;
 
 namespace TrackerOfflineSearch.Services;
 
