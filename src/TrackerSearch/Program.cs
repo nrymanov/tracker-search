@@ -1,4 +1,3 @@
-using System.IO;
 using Avalonia.Svg.Skia;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -67,11 +66,6 @@ internal sealed class Program
         var logger = RegisterLogger(configuration, services);
 
         logger.Verbose("ConfigureServices - begin");
-        logger.Debug("ConfigureServices - begin");
-        logger.Information("ConfigureServices - begin");
-        logger.Warning("ConfigureServices - begin");
-        logger.Error("ConfigureServices - begin");
-        logger.Fatal("ConfigureServices - begin");
 
         services
             .AddSingleton<IPostMapper, PostMapper>()
@@ -80,10 +74,6 @@ internal sealed class Program
             .AddTransient<IIndexImportService, LuceneImportService>();
 
         services
-            .AddSingleton<ILoadingViewModel, LoadingViewModel>()
-            .AddSingleton<ISearchViewModel, SearchViewModel>()
-            .AddSingleton<IImportViewModel, ImportViewModel>()
-            .AddSingleton<IAboutViewModel, AboutViewModel>()
             .AddSingleton<MainWindowViewModel>();
         
         return services.BuildServiceProvider();

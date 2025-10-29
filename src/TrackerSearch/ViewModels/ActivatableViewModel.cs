@@ -1,5 +1,3 @@
-﻿using ReactiveUI;
-
 namespace TrackerSearch.ViewModels;
 
 public class ActivatableViewModel : ViewModelBase, IActivatableViewModel

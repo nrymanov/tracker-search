@@ -7,6 +7,7 @@ public class MainWindowViewModel : ActivatableViewModel
 {
     #region Constructor
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "MA0051:Method is too long", Justification = "<Pending>")]
     public MainWindowViewModel(
         ILogger<MainWindowViewModel> logger,
         IIndexSearchService searchService,
@@ -48,6 +49,12 @@ public class MainWindowViewModel : ActivatableViewModel
             .SortAndBind(out _postItems, postComparer)
             .Subscribe();
 
+        _selectedPostInfoProperty = this.WhenAnyValue(x => x.SelectedPost)
+            .Throttle(TimeSpan.FromMilliseconds(500), RxApp.TaskpoolScheduler)
+            .DistinctUntilChanged()
+            .Select(post => post is null ? null : new PostInfoViewModel(post))
+            .ToProperty(this, x => x.SelectedPostInfo);
+
         _postContentProperty = this.WhenAnyValue(x => x.SelectedPost)
             .Throttle(TimeSpan.FromMilliseconds(500), RxApp.TaskpoolScheduler)
             .DistinctUntilChanged()
@@ -57,7 +64,6 @@ public class MainWindowViewModel : ActivatableViewModel
         //
         // Займемся поиском
         //
-
         SearchCommand = ReactiveCommand.CreateFromTask<PostQuery>(SearchPostsAsync);
 
         this.WhenAnyValue(x => x.SelectedForum, x => x.PostFilter, (forum, post) => (ForumPath: forum?.Id, PostFilter: post?.Trim()))
@@ -118,6 +124,8 @@ public class MainWindowViewModel : ActivatableViewModel
     }
 
     public string SelectedPostContent => _postContentProperty.Value;
+
+    public PostInfoViewModel? SelectedPostInfo => _selectedPostInfoProperty.Value;
 
     #endregion
 
@@ -251,6 +259,7 @@ public class MainWindowViewModel : ActivatableViewModel
     private readonly SourceCache<Post, int> _postCache;
     private readonly ReadOnlyObservableCollection<Post> _postItems;
     private Post? _selectedPost;
+    private readonly ObservableAsPropertyHelper<PostInfoViewModel?> _selectedPostInfoProperty;
     private readonly ObservableAsPropertyHelper<string> _postContentProperty;
 
     private string _forumFilter = "";

@@ -1,5 +1,3 @@
-using System.Collections.ObjectModel;
-using DynamicData;
 using TrackerOfflineSearch.Core.Models;
 
 namespace TrackerSearch.ViewModels;
@@ -41,4 +39,3 @@ public class ForumViewModel : ReactiveObject
 
     private bool _isExpanded;
 }
-
