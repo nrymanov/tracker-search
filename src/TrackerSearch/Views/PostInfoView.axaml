@@ -13,6 +13,13 @@
     <internal:FileSizeStringConverter x:Key="SizeToString"/>
   </UserControl.Resources>
 
+  <UserControl.Styles>
+    <Style Selector="HyperlinkButton">
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+  </UserControl.Styles>
+
   <Grid Grid.Row="0"
         ColumnDefinitions="Auto, *"
         RowDefinitions="Auto, Auto, Auto, Auto, Auto"
@@ -43,9 +50,9 @@
 
     <TextBlock Grid.Column="0" Grid.Row="4" Text="Links" FontWeight="Bold" HorizontalAlignment="Right"/>
     <StackPanel Grid.Column="1" Grid.Row="4" Orientation="Horizontal" Spacing="5">
-      <HyperlinkButton Content="Original post" NavigateUri="http://rbc.ru" Padding="0" BorderThickness="0"/>
-      <HyperlinkButton Content="Download .torrent" Padding="0" BorderThickness="0"/>
-      <HyperlinkButton Content="Magnet link" Padding="0" BorderThickness="0"/>
+      <HyperlinkButton Content="Оригинальный пост" NavigateUri="{Binding PostUri}" />
+      <HyperlinkButton Content="Скачать .torrent" NavigateUri="{Binding TorrentUri}"/>
+      <HyperlinkButton Content="Скопировать Magnet link" />
     </StackPanel>
   </Grid>
 </UserControl>

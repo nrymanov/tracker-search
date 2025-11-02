@@ -1,8 +1,7 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using System.Xml;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
-using SharpCompress.Compressors.Xz;
 using TrackerOfflineSearch.Core.Interfaces;
 using TrackerOfflineSearch.Core.Models;
 
@@ -24,9 +23,8 @@ public class ArchiveReader : IArchiveReader
         [EnumeratorCancellation] CancellationToken ct
         )
     {
-        await using var stream = File.OpenRead(arhiveFilePath);
-        using var decompressor = new XZStream(stream); // из XZ.NET
-        using var reader = XmlReader.Create(decompressor, new XmlReaderSettings { Async = true });
+        await using var stream = new XZStreamWrapper(arhiveFilePath);
+        using var reader = XmlReader.Create(stream, new XmlReaderSettings { Async = true });
 
         await reader.MoveToContentAsync().ConfigureAwait(false);
 

@@ -57,15 +57,11 @@ public record Post
 
     public string TorrentUrl => string.Format(TorrentUrlTemplate, Id);
 
-    public string TrackerUrl => TrackerId == 1
-        ? Tracker1Template
-        : string.Format(TrackerNTemplate, TrackerId);
-
     public string MagnetUrl
     {
         get
         {
-            var tracker = HttpUtility.UrlEncode(TrackerUrl);
+            var tracker = HttpUtility.UrlEncode(TrackerId == 1 ? Tracker1Template : string.Format(TrackerNTemplate, TrackerId));
             var title = HttpUtility.UrlEncode(Title);
 
             return string.Format(MagnetUrlTemplate, Hash, tracker, title);

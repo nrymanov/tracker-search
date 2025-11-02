@@ -11,15 +11,29 @@
         Icon="/Assets/avalonia-logo.ico"
         Title="TrackerSearch">
 
-  <Grid ColumnDefinitions="300, Auto, *" Margin="5">
+  <Grid ColumnDefinitions="Auto, 300, Auto, *"
+        Margin="5">
+    <!--Дополнительные команды-->
+    <StackPanel Grid.Column="0" Spacing="5" Margin="0, 0, 5, 0">
+      <Button ToolTip.Tip="Update index" Command="{Binding ImportCommand}">
+        <Svg Path="/Assets/import_small.svg" Width="42"/>
+      </Button>
+
+      <Button ToolTip.Tip="About" Command="{Binding AboutCommand}">
+        <Svg Path="/Assets/about_small.svg" Width="42"/>
+      </Button>
+    </StackPanel>
+
     <!--Список форумов и фильтр-->
-    <Grid RowDefinitions="Auto, *" RowSpacing="3">
+    <Grid Grid.Column="1" RowDefinitions="Auto, *" RowSpacing="5">
+      <!--Фильтр форумов-->
       <TextBox Grid.Row="0"
                Text="{Binding ForumFilter, UpdateSourceTrigger=PropertyChanged}"
                Classes="clearButton"
                Watermark="Фильтр форумов"
                BorderBrush="LightGray"/>
 
+      <!--Дерево форумов-->
       <TreeView Grid.Row="1"
                 ItemsSource="{Binding Forums}"
                 SelectedItem="{Binding SelectedForum}"
@@ -41,15 +55,30 @@
           </TreeDataTemplate>
         </TreeView.ItemTemplate>
       </TreeView>
+
+      <!--Информация о базе и дополнительные команды-->
+      <!--      
+      <Border Grid.Row="2" BorderThickness="1" BorderBrush="LightGray">
+        <Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, Auto"
+              ColumnSpacing="5" RowSpacing="5"
+              Margin="5">
+          <TextBlock Grid.Column="0" Grid.Row="0" Text="Дата создания" FontWeight="SemiBold"/>
+          <TextBlock Grid.Column="1" Grid.Row="0" Text="01 январия 1900"/>
+
+          <TextBlock Grid.Column="0" Grid.Row="1" Text="Всего постов" FontWeight="SemiBold"/>
+          <TextBlock Grid.Column="1" Grid.Row="1" Text="9999"/>
+        </Grid>
+      </Border>
+      -->    
     </Grid>
 
-    <GridSplitter Grid.Column="1" ResizeDirection="Columns" />
+    <GridSplitter Grid.Column="2" ResizeDirection="Columns"/>
 
     <!--Список постов и предпросмотр выбранного поста-->
-    <Grid Grid.Column="2"
+    <Grid Grid.Column="3"
           ColumnDefinitions="400, Auto, *"
           RowDefinitions="Auto, *"
-          RowSpacing="3">
+          RowSpacing="5">
 
       <TextBox Grid.Row="0" Grid.ColumnSpan="3"
                Text="{Binding PostFilter, UpdateSourceTrigger=PropertyChanged}"
@@ -83,7 +112,7 @@
       <GridSplitter Grid.Column="1" Grid.Row="1" ResizeDirection="Columns" />
 
       <!--Информация о посте и просмотр содержимого-->
-      <Border Grid.Column="2" Grid.Row="1" 
+      <Border Grid.Column="2" Grid.Row="1"
               BorderThickness="1" BorderBrush="LightGray">
         <Grid RowDefinitions="Auto, *">
           <Border BorderThickness="0, 0, 0, 1" BorderBrush="LightGray">
@@ -94,8 +123,5 @@
         </Grid>
       </Border>
     </Grid>
-
   </Grid>
-
-
 </Window>

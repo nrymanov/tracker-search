@@ -1,0 +1,28 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" 
+        Width="450" Height="300"
+        x:Class="TrackerSearch.Dialogs.About.AboutDialog"
+        CanMinimize="False"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Title="О программе">
+  <Grid RowDefinitions="*, Auto" Margin="5">
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="5">
+      <TextBlock Text="Tracker Offline Search" FontSize="24" FontWeight="SemiBold"/>
+      <TextBlock Text="Version 0.0.0"/>
+      <TextBlock Text="Created 01 January 1990"/>
+      <TextBlock Text="Nick Rymanov, 2025"/>
+    </StackPanel>
+
+    <StackPanel Grid.Row="1" HorizontalAlignment="Right">
+      <Button Content="OK" MinWidth="75" HorizontalContentAlignment="Center"
+              Classes="accent"
+              IsDefault="True" IsCancel="True"
+              Click="Button_Click"/>
+    </StackPanel>
+    <Panel/>
+  </Grid>
+</Window>

@@ -74,9 +74,35 @@ public sealed class LuceneImportService : IIndexImportService, IDisposable
 
     public void Clear() => _writer.DeleteAll();
 
-    public void Optimize() => _writer.ForceMerge(1);
+    public void Optimize(IndexOptimizationStrategy strategy)
+    {
+        if (strategy == IndexOptimizationStrategy.None)
+        {
+            return;
+        }
+
+        int maxSegments = strategy switch
+        {
+            IndexOptimizationStrategy.Low => 20,
+            IndexOptimizationStrategy.Normal => 10,
+            IndexOptimizationStrategy.High => 5,
+            IndexOptimizationStrategy.Maximum => 1,
+            _ => throw new ArgumentException("Unsupported optimization strategy", nameof(strategy))
+        };
+
+        _writer.ForceMerge(maxSegments);
+    }
 
     public void Commit() => _writer.Commit();
 
     public void Rollback() => _writer.Rollback();
+
+    public Task ClearAsync(CancellationToken cancellation) => Task.Run(Clear, cancellation);
+
+    public Task OptimizeAsync(IndexOptimizationStrategy strategy, CancellationToken cancellation) =>
+        Task.Run(() => Optimize(strategy), cancellation);
+
+    public Task CommitAsync(CancellationToken cancellation) => Task.Run(Commit, cancellation);
+
+    public Task RollbackAsync(CancellationToken cancellation) => Task.Run(Rollback, cancellation);
 }

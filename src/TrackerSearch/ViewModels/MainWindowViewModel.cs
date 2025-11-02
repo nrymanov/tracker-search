@@ -18,10 +18,18 @@ public class MainWindowViewModel : ActivatableViewModel
         _searchService = searchService ?? throw new ArgumentNullException(nameof(searchService));
         _textConverter = textConverter ?? throw new ArgumentNullException(nameof(textConverter));
 
+        _import = new();
+
+        ImportCommand = ReactiveCommand.CreateFromTask<bool>(ImportAsync);
+
+        _about = new();
+
+        AboutCommand = ReactiveCommand.CreateFromTask(AboutAsync);
+
         //
         // Создадим список форумов и настроим его фильтрацию и сортировку
         //
-        _forumCache = new(x => x.Id);
+        _forumCache = new (x => x.Id);
 
         var filter = this.WhenAnyValue(x => x.ForumFilter, (string? f) => f?.Trim() ?? "")
             .Throttle(TimeSpan.FromMilliseconds(500), RxApp.TaskpoolScheduler)
@@ -64,7 +72,7 @@ public class MainWindowViewModel : ActivatableViewModel
         //
         // Займемся поиском
         //
-        SearchCommand = ReactiveCommand.CreateFromTask<PostQuery>(SearchPostsAsync);
+        SearchCommand = ReactiveCommand.CreateFromTask<PostQuery>(SearchAsync);
 
         this.WhenAnyValue(x => x.SelectedForum, x => x.PostFilter, (forum, post) => (ForumPath: forum?.Id, PostFilter: post?.Trim()))
             .Throttle(TimeSpan.FromMilliseconds(500), RxApp.TaskpoolScheduler)
@@ -127,6 +135,16 @@ public class MainWindowViewModel : ActivatableViewModel
 
     public PostInfoViewModel? SelectedPostInfo => _selectedPostInfoProperty.Value;
 
+    // Команды
+
+    public Interaction<Unit, bool> Import => _import;
+
+    public ReactiveCommand<Unit, bool> ImportCommand { get; }
+
+    public  Interaction<Unit, Unit> About => _about;
+
+    public ReactiveCommand<Unit, Unit> AboutCommand { get; }
+
     #endregion
 
     #region Private
@@ -145,7 +163,7 @@ public class MainWindowViewModel : ActivatableViewModel
         }, ct);
     }
 
-    private Task SearchPostsAsync(PostQuery query, CancellationToken ct)
+    private Task SearchAsync(PostQuery query, CancellationToken ct)
     {
         return Task.Run(() =>
         {
@@ -173,6 +191,18 @@ public class MainWindowViewModel : ActivatableViewModel
             }
         }, ct);
     }
+
+    private async Task<bool> ImportAsync()
+    {
+        var importCompleted = await _import.Handle(Unit.Default);
+        //if (importCompleted)
+        {
+            _searchService.Refresh();
+        }
+        return importCompleted;
+    }
+
+    private async Task AboutAsync() => await _about.Handle(Unit.Default);
 
     /// <summary>
     /// Возвращает коллекцию форумов, включая всех их предков (родительские форумы) до корневого уровня.
@@ -264,6 +294,9 @@ public class MainWindowViewModel : ActivatableViewModel
 
     private string _forumFilter = "";
     private string _postFilter = "";
+
+    private readonly Interaction<Unit, bool> _import;
+    private readonly Interaction<Unit, Unit> _about;
 
     #endregion
 }

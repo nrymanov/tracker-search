@@ -4,8 +4,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using TrackerOfflineSearch.Core.Interfaces;
 using TrackerOfflineSearch.Core.Services;
+using TrackerSearch.Dialogs.About;
+using TrackerSearch.Dialogs.Import;
 using TrackerSearch.Services;
 using TrackerSearch.ViewModels;
+using TrackerSearch.Views;
 
 namespace TrackerSearch;
 
@@ -69,13 +72,22 @@ internal sealed class Program
 
         services
             .AddSingleton<IPostMapper, PostMapper>()
+            .AddSingleton<IArchiveReader, ArchiveReader>()
             .AddSingleton<IBBTextConverter, BBTextConverter>()
             .AddSingleton<IIndexSearchService, LuceneSearchService>()
-            .AddTransient<IIndexImportService, LuceneImportService>();
+            .AddTransient<IIndexImportService, LuceneImportService>()
+            ;
 
         services
-            .AddSingleton<MainWindowViewModel>();
-        
+            .AddSingleton<MainWindowViewModel>()
+            .AddTransient<AboutViewModel>()            
+            .AddTransient<ImportWizardViewModel>()
+            ;
+
+        services
+            .AddSingleton<MainWindow>()
+            ;
+
         return services.BuildServiceProvider();
     }
 }

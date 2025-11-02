@@ -120,6 +120,32 @@ public sealed class LuceneSearchService : IIndexSearchService, IDisposable
         if (newReader != null)
         {
             _reader.Dispose();
+
+            // Идея так себе, но пока оставлю.
+            //
+            // Что тут происходит:
+            //
+            // Lucene не может удалить файлы, пока существует хоть один DirectoryReader, который ссылается на старую версию индекса.
+            //
+            // Когда вызывается OpenIfChanged(), старый DirectoryReader закрывается и открывается новый.
+            // Но важно: удаление файлов не происходит мгновенно — оно произойдёт только после того,
+            // как IndexWriter будет открыт заново, и Lucene проведёт «deletion policy cleanup».
+            // IndexWriter при создании выполняет проверку(IndexFileDeleter), которая:
+            // - Сканирует индексную директорию.
+            // - Удаляет все файлы, которые больше не используются ни одной актуальной версией индекса.
+            // Это и есть тот момент, когда освобождается место.
+            //
+            // Пока IndexWriter жив и открыты DirectoryReader'ы на старые версии, файлы остаются, даже если они уже не нужны.
+            //
+            var config = new IndexWriterConfig(AppConsts.SearchEngineVersion, _analyzer)
+            {
+                OpenMode = OpenMode.CREATE_OR_APPEND,
+            };
+            using (var writer = new IndexWriter(_directory, config))
+            {
+                writer.Commit();
+            }
+
             _reader = newReader;
         }
     }

@@ -8,9 +8,17 @@ public interface IIndexImportService
 
     void Clear();
 
-    void Optimize();
+    void Optimize(IndexOptimizationStrategy strategy);
 
     void Commit();
 
     void Rollback();
+
+    Task ClearAsync(CancellationToken cancellation);
+
+    Task OptimizeAsync(IndexOptimizationStrategy strategy, CancellationToken cancellation);
+
+    Task CommitAsync(CancellationToken cancellation);
+
+    Task RollbackAsync(CancellationToken cancellation);
 }
