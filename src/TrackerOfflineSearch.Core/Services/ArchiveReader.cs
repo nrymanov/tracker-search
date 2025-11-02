@@ -9,10 +9,7 @@ namespace TrackerOfflineSearch.Core.Services;
 
 public class ArchiveReader : IArchiveReader
 {
-    public ArchiveReader(
-        ILogger<ArchiveReader> logger,
-        IPostMapper mapper
-        )
+    public ArchiveReader(ILogger<ArchiveReader> logger, IPostMapper mapper)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));

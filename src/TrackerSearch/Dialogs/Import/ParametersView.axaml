@@ -3,7 +3,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:TrackerSearch.Dialogs.Import"
-             mc:Ignorable="d"
+             mc:Ignorable="d" 
+             d:DesignWidth="600" d:DesignHeight="450"
              MinWidth="600" MinHeight="450"
              x:Class="TrackerSearch.Dialogs.Import.ParametersView"
              x:DataType="vm:ParametersViewModel">
@@ -23,8 +24,8 @@
     </Border>
 
     <!--Content-->
-    <Grid Grid.Row="1"
-          RowDefinitions="Auto, Auto, 10, Auto, Auto, 10, Auto, Auto, *"
+    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+    <Grid RowDefinitions="Auto, Auto, 10, Auto, Auto, 10, Auto, Auto, *"
           RowSpacing="5"
           Margin="40"
           >
@@ -32,7 +33,8 @@
       <TextBlock Grid.Row="0" Text="Файл"/>
       <Grid Grid.Row="1" ColumnDefinitions="*, Auto" ColumnSpacing="5">
         <TextBox Grid.Column="0" IsReadOnly="True" BorderBrush="{DynamicResource SystemControlTransientBorderBrush}"
-                 Text="{Binding ArchivePath}"/>
+                 Text="{Binding ArchivePath}"
+                 Watermark="Выберите архив для импорта"/>
         <Button Grid.Column="1" Content="_Выбрать..."
                 Click="OnSelectArchive"/>
       </Grid>
@@ -47,7 +49,9 @@
       <Border Grid.Row="4" BorderThickness="1"
               BorderBrush="{DynamicResource SystemControlTransientBorderBrush}"
               Background="lightblue" CornerRadius="3">
-        <TextBlock Text="{Binding IndexTypeTip}" Margin="10"/>
+        <TextBlock Text="{Binding IndexTypeTip, FallbackValue='Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'}" 
+                   Margin="10"
+                   TextWrapping="Wrap"/>
       </Border>
 
       <!--Оптимизация индекса-->
@@ -65,9 +69,12 @@
               BorderBrush="{DynamicResource SystemControlTransientBorderBrush}"
               Background="lightblue"
               CornerRadius="3">
-        <TextBlock Text="{Binding IndexOptimizationTip}" Margin="10"/>
+        <TextBlock Text="{Binding IndexOptimizationTip, FallbackValue='Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'}" 
+                   Margin="10"
+                   TextWrapping="Wrap"/>
       </Border>
     </Grid>
+    </ScrollViewer>
 
 
     <!--Buttons-->

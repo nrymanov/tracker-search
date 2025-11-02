@@ -7,17 +7,21 @@ public class ImportWizardViewModel: ActivatableViewModel, IScreen
 {
     public ImportWizardViewModel(
         IArchiveReader archiveReader,
-        IIndexImportService importService
+        IIndexService indexService
         )
     {
         CancelCommand = ReactiveCommand.CreateFromTask(ConfirmCancelAsync);
 
         _paramsPage = new ParametersViewModel(this);
-        _progressPage = new ProgressViewModel(this, archiveReader, importService);
+        _progressPage = new ProgressViewModel(this, archiveReader, indexService);
         _resultPage = new ResultViewModel(this);
 
         _paramsPage.GoNextCommand
             .Select(p => _progressPage.WithParameters(p))
+            .InvokeCommand<IRoutableViewModel>(Router.Navigate);
+
+        _progressPage.ImportCommand
+            .Select(p => _resultPage.WithParameters(p))
             .InvokeCommand<IRoutableViewModel>(Router.Navigate);
 
         Observable.Merge(
@@ -35,9 +39,19 @@ public class ImportWizardViewModel: ActivatableViewModel, IScreen
         });
     }
 
+    #region IScreen
+
     public RoutingState Router { get; } = new();
 
+    #endregion
+
+    #region Public
+
     public ReactiveCommand<Unit, bool> CancelCommand { get; }
+
+    #endregion
+
+    #region Private
 
     private async Task<bool> ConfirmCancelAsync()
     {
@@ -54,4 +68,6 @@ public class ImportWizardViewModel: ActivatableViewModel, IScreen
     private readonly ParametersViewModel _paramsPage;
     private readonly ProgressViewModel _progressPage;
     private readonly ResultViewModel _resultPage;
+
+    #endregion
 }

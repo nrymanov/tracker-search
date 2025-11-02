@@ -1,3 +1,4 @@
+using System.Reactive.Subjects;
 using TrackerOfflineSearch.Core.Interfaces;
 using TrackerOfflineSearch.Core.Models;
 
@@ -10,25 +11,36 @@ public class MainWindowViewModel : ActivatableViewModel
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "MA0051:Method is too long", Justification = "<Pending>")]
     public MainWindowViewModel(
         ILogger<MainWindowViewModel> logger,
-        IIndexSearchService searchService,
+        IIndexService indexService,
         IBBTextConverter textConverter
         )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _searchService = searchService ?? throw new ArgumentNullException(nameof(searchService));
+        _indexService = indexService ?? throw new ArgumentNullException(nameof(indexService));
         _textConverter = textConverter ?? throw new ArgumentNullException(nameof(textConverter));
+
+        _refreshSubj = new BehaviorSubject<bool>(value: true);
+
+        #region Команды
 
         _import = new();
 
         ImportCommand = ReactiveCommand.CreateFromTask<bool>(ImportAsync);
+        ImportCommand.Subscribe(_refreshSubj);
 
         _about = new();
 
         AboutCommand = ReactiveCommand.CreateFromTask(AboutAsync);
 
+        SearchCommand = ReactiveCommand.CreateFromTask<PostQuery>(SearchAsync);
+
+        #endregion
+
+        #region Список форумов
         //
         // Создадим список форумов и настроим его фильтрацию и сортировку
         //
+
         _forumCache = new (x => x.Id);
 
         var filter = this.WhenAnyValue(x => x.ForumFilter, (string? f) => f?.Trim() ?? "")
@@ -46,9 +58,13 @@ public class MainWindowViewModel : ActivatableViewModel
             .SortAndBind(out _forumTreeItems, forumComparer)
             .Subscribe();
 
+        #endregion
+
+        #region Список документов
         //
         // Создадим список постов
         //
+
         _postCache = new(x => x.Id);
 
         var postComparer = SortExpressionComparer<Post>.Ascending(f => f.Index);
@@ -69,18 +85,29 @@ public class MainWindowViewModel : ActivatableViewModel
             .Select(post => post is null ? "" : _textConverter.Convert(post.Content))
             .ToProperty(this, x => x.SelectedPostContent);
 
+        #endregion
+
+        #region Поиск
         //
         // Займемся поиском
         //
-        SearchCommand = ReactiveCommand.CreateFromTask<PostQuery>(SearchAsync);
 
-        this.WhenAnyValue(x => x.SelectedForum, x => x.PostFilter, (forum, post) => (ForumPath: forum?.Id, PostFilter: post?.Trim()))
+        _queryProperty = this.WhenAnyValue(x => x.SelectedForum, x => x.PostFilter, (forum, post) => (ForumPath: forum?.Id, PostFilter: post?.Trim()))
             .Throttle(TimeSpan.FromMilliseconds(500), RxApp.TaskpoolScheduler)
             .DistinctUntilChanged()
             .Select(args => new PostQuery(args.PostFilter, args.PostFilter, args.ForumPath))
+            .ToProperty(this, x => x.Query, new PostQuery());
+
+        Observable.CombineLatest(
+            this.WhenAnyValue(x => x.Query),
+            _refreshSubj.Where(success => success),
+            (q, _) => q
+        )
             .Select(query => SearchCommand.Execute(query).Catch(Observable.Empty<Unit>()))
             .Switch()
             .Subscribe();
+
+        #endregion
 
         SearchCommand.ThrownExceptions
             .Subscribe();
@@ -149,15 +176,17 @@ public class MainWindowViewModel : ActivatableViewModel
 
     #region Private
 
+    private PostQuery Query => _queryProperty.Value;
+
     private ReactiveCommand<PostQuery, Unit> SearchCommand { get; }
 
     private Task InitAsync(CancellationToken ct)
     {
         return Task.Run(() =>
         {
-            var total = _searchService.TotalCount;
+            var total = _indexService.TotalCount;
 
-            var forums = GetForumWithAncestors(_searchService.GetForums()).Concat([Forum.AllForums]);
+            var forums = GetForumWithAncestors(_indexService.GetForums()).Concat([Forum.AllForums]);
 
             _forumCache.EditDiff(forums, (current, prevous) => string.Equals(current.Id, prevous.Id, StringComparison.Ordinal));
         }, ct);
@@ -171,7 +200,7 @@ public class MainWindowViewModel : ActivatableViewModel
             {
                 _logger.LogDebug("Search begin {query}", query);
 
-                var searchResult = _searchService.Search(query);
+                var searchResult = _indexService.Search(query);
 
                 ct.ThrowIfCancellationRequested();
 
@@ -195,9 +224,13 @@ public class MainWindowViewModel : ActivatableViewModel
     private async Task<bool> ImportAsync()
     {
         var importCompleted = await _import.Handle(Unit.Default);
-        //if (importCompleted)
+
+        // HACK
+        importCompleted = true;
+
+        if (importCompleted)
         {
-            _searchService.Refresh();
+            _indexService.Refresh();
         }
         return importCompleted;
     }
@@ -279,7 +312,7 @@ public class MainWindowViewModel : ActivatableViewModel
     }
 
     private readonly ILogger<MainWindowViewModel> _logger;
-    private readonly IIndexSearchService _searchService;
+    private readonly IIndexService _indexService;
     private readonly IBBTextConverter _textConverter;
 
     private readonly SourceCache<Forum, string> _forumCache;
@@ -294,6 +327,9 @@ public class MainWindowViewModel : ActivatableViewModel
 
     private string _forumFilter = "";
     private string _postFilter = "";
+    private readonly ObservableAsPropertyHelper<PostQuery> _queryProperty;
+
+    private readonly BehaviorSubject<bool> _refreshSubj;
 
     private readonly Interaction<Unit, bool> _import;
     private readonly Interaction<Unit, Unit> _about;

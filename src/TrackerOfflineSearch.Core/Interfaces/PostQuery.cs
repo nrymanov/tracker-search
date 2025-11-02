@@ -1,9 +1,9 @@
 namespace TrackerOfflineSearch.Core.Interfaces;
 
 public record class PostQuery(
-        string? Title,
-        string? Content,
-        string? Forum,
+        string? Title = null,
+        string? Content = null,
+        string? Forum = null,
         long? MinSize = null,
         long? MaxSize = null,
         DateTime? MinDate = null,
@@ -14,7 +14,7 @@ public record class PostQuery(
 
     public bool HasContentQuery() => !string.IsNullOrEmpty(Content);
 
-    public bool HasForumFilter() => !string.IsNullOrEmpty(Forum);
+    public bool HasForumFilter() => !string.IsNullOrEmpty(Forum) && !Models.Forum.Separator.Equals(Forum, StringComparison.Ordinal);
 
     public bool HasSizeFilter() => MinSize.HasValue || MaxSize.HasValue;
 

@@ -20,11 +20,11 @@ public class ParametersViewModel : ActivatableViewModel, IWizardPageViewModel
         CancelCommand = ReactiveCommand.Create(() => { });
 
         _indexTypeTipProperty = this.WhenAnyValue(x => x.SimpleIndex)
-            .Select(simple => $"Is simple index = {simple}")
+            .Select(GetIndexTypeDescription)
             .ToProperty(this, x => x.IndexTypeTip);
 
         _indexOptimizationProperty = this.WhenAnyValue(x => x.Optimization)
-            .Select(level => $"Optimization level = {level}")
+            .Select(x => GetOptimizationStrategyDescription((IndexOptimizationStrategy)x))
             .ToProperty(this, x => x.IndexOptimizationTip);
     }
 
@@ -73,6 +73,22 @@ public class ParametersViewModel : ActivatableViewModel, IWizardPageViewModel
     #endregion
 
     #region Private
+
+    private static string GetIndexTypeDescription(bool isSimpleIndex) =>
+        isSimpleIndex
+            ? "Простой индекс: поиск по тексту постов недоступен, но поиск по заголовкам работает. Создаётся быстро и занимает минимум места."
+            : "Полный индекс: поиск по тексту постов доступен, требует больше времени и места.";
+
+    private static string GetOptimizationStrategyDescription(IndexOptimizationStrategy optimizationStrategy) =>
+        optimizationStrategy switch
+        {
+            IndexOptimizationStrategy.Minimum => "Быстро выполняется, индекс крупнее и фрагментирован, поиск немного медленнее.",
+            IndexOptimizationStrategy.Low => "Лёгкая оптимизация: немного меньше сегментов, поиск чуть быстрее, немного места на диске.",
+            IndexOptimizationStrategy.Normal => "Сбалансированно: меньше сегментов, умеренный размер, поиск быстрее, умеренное место на диске.",
+            IndexOptimizationStrategy.High => "Глубокая оптимизация: меньше файлов и размер меньше, поиск быстрее, требуется больше времени и места на диске.",
+            IndexOptimizationStrategy.Maximum => "Максимум: минимальный размер и файлов, поиск самый быстрый, но оптимизация долгая и требует много временного места.",
+            _ => throw new ArgumentOutOfRangeException(nameof(optimizationStrategy)),
+        };
 
     private readonly ObservableAsPropertyHelper<string> _indexTypeTipProperty;
     private readonly ObservableAsPropertyHelper<string> _indexOptimizationProperty;

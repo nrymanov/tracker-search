@@ -2,8 +2,14 @@ using TrackerOfflineSearch.Core.Models;
 
 namespace TrackerOfflineSearch.Core.Interfaces;
 
-public interface IIndexImportService
+public interface IIndexService
 {
+    int TotalCount { get; }
+
+    IEnumerable<Forum> GetForums();
+
+    SearchResult Search(PostQuery postQuery, int limit = 100);
+
     void Add(Post post);
 
     void Clear();
@@ -13,6 +19,8 @@ public interface IIndexImportService
     void Commit();
 
     void Rollback();
+
+    void Refresh();
 
     Task ClearAsync(CancellationToken cancellation);
 

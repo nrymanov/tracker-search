@@ -1,10 +1,7 @@
 using System.Diagnostics;
 using System.Reactive.Subjects;
-using System.Threading.Channels;
 using TrackerOfflineSearch.Core.Interfaces;
-using TrackerOfflineSearch.Core.Models;
 using TrackerSearch.ViewModels;
-using static Lucene.Net.Util.Packed.PackedInt32s;
 
 namespace TrackerSearch.Dialogs.Import;
 
@@ -13,17 +10,15 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
     public ProgressViewModel(
         IScreen screen,
         IArchiveReader archiveReader,
-        IIndexImportService importService
+        IIndexService indexService
         )
     {
         HostScreen = screen ?? throw new ArgumentNullException(nameof(screen));
         _archiveReader = archiveReader ?? throw new ArgumentNullException(nameof(archiveReader));
-        _importService = importService ?? throw new ArgumentNullException(nameof(importService));
+        _indexService = indexService ?? throw new ArgumentNullException(nameof(indexService));
 
         ImportCommand = ReactiveCommand.CreateFromTask<ImportParameters, ImportResult>(ImportAsync);
         CancelCommand = ReactiveCommand.Create(() => { });
-
-        _isBusyPropery = ImportCommand.IsExecuting.ToProperty(this, x => x.IsBusy);
 
         _messagePropery = _messages
             .ObserveOn(RxApp.MainThreadScheduler)
@@ -42,9 +37,13 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
         });
     }
 
+    #region IRoutableViewModel
+
     public string? UrlPathSegment => "import-progress";
 
     public IScreen HostScreen { get; }
+
+    #endregion
 
     #region IWizardPageViewModel
 
@@ -54,6 +53,8 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
     public Task<bool> ConfirmCancelAsync() => Task.FromResult(true);
 
     #endregion
+
+    #region Public
 
     public ProgressViewModel WithParameters(ImportParameters parameters)
     {
@@ -65,74 +66,57 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
 
     public string Message => _messagePropery.Value;
 
-    public bool IsBusy => _isBusyPropery.Value;
+    #endregion
+
+    #region Private
 
     private async Task<int> ImportDocumentsAsync(ImportParameters parameters, CancellationToken ct)
     {
-        var startTime = DateTimeOffset.Now;
+        int total = 0;
+        var lastTime = Stopwatch.StartNew();
 
-        var totalItems = new Subject<int>();
+        var oneSecond = TimeSpan.FromSeconds(1);
 
-        using var messagesSubscription = totalItems.Scan(0, (acc, x) => acc + x)
-            .Timestamp()
-            .Select(x => (ts: TimeSpan.FromSeconds((int)(x.Timestamp - startTime).TotalSeconds), v: x.Value))
-            .Select(x => $"Импортированно {x.v:N0} документов за {x.ts:g}")
-            .Subscribe(_messages);
+        _messages.OnNext($"Импортировано {0:N0} документов");
 
-        var channel = Channel.CreateBounded<Post>(new BoundedChannelOptions(100) { SingleReader = false, SingleWriter = true, });
-
-        var reader = channel.Reader;
-        var consumers = Enumerable.Range(0, Math.Max(1, Environment.ProcessorCount / 2))
-            .Select(_ => WritePostsToIndex(reader, totalItems, ct))
-            .ToArray();
-
-        ChannelWriter<Post> writer = channel.Writer;
-
-        int documentsRead = 0;
-
-        await foreach (var item in _archiveReader.ReadPostsAsync(parameters.ArchivePath, ct).ConfigureAwait(false))
-        {
-            if (item.IsNull)
+        await Parallel.ForEachAsync(
+            _archiveReader.ReadPostsAsync(parameters.ArchivePath, ct),
+            new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = ct },
+            (post, token) =>
             {
-                continue;
-            }
+                _indexService.Add(post);
 
-            await writer.WriteAsync(item, ct).ConfigureAwait(false);
+                int count = Interlocked.Increment(ref total);
 
-            ++documentsRead;
+                if (lastTime.Elapsed >= oneSecond)
+                {
+                    lastTime.Restart();
+                    _messages.OnNext($"Импортировано {count:N0} документов");
+                }
 
-            if (documentsRead > 30_000)
-                break;
-        }
+                return ValueTask.CompletedTask;
+            }).ConfigureAwait(false);
 
-        writer.Complete();
+        _messages.OnNext($"Импортировано {total:N0} документов");
 
-        var result = await Task.WhenAll(consumers).ConfigureAwait(false);
-
-        var documentsWritten = result.Sum();
-
-        if (documentsRead != documentsWritten)
-        {
-            Debug.Assert(documentsRead == documentsWritten);
-            // Не все документы были записаны
-        }
-
-        return documentsWritten;
+        return total;
     }
 
     private async Task<ImportResult> ImportAsync(ImportParameters parameters, CancellationToken ct)
     {
         try
         {
-            await _importService.ClearAsync(ct).ConfigureAwait(false);
+            await _indexService.ClearAsync(ct).ConfigureAwait(false);
 
             var documentCount = await ImportDocumentsAsync(parameters, ct).ConfigureAwait(false);
 
             _messages.OnNext("Оптимизация индекса");
-            await _importService.OptimizeAsync(parameters.IndexOptimization, ct).ConfigureAwait(false);
+            await _indexService.OptimizeAsync(parameters.IndexOptimization, ct).ConfigureAwait(false);
 
             _messages.OnNext("Завершение импорта");
-            await _importService.CommitAsync(ct).ConfigureAwait(false);
+            await _indexService.CommitAsync(ct).ConfigureAwait(false);
+
+            _indexService.Refresh();
 
             _messages.OnNext("Импорт завершен");
 
@@ -143,39 +127,18 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
             //
             // Доделать обработку ошибок от Writer-ов
             //
-            await _importService.RollbackAsync(ct).ConfigureAwait(false);
+            await _indexService.RollbackAsync(ct).ConfigureAwait(false);
 
             throw;
         }
     }
 
-    private async Task<int> WritePostsToIndex(ChannelReader<Post> reader, Subject<int> totalItems, CancellationToken ct)
-    {
-        int count = 0;
-        int total = 0;
-
-        await foreach (var post in reader.ReadAllAsync(ct).ConfigureAwait(false))
-        {
-            _importService.Add(post);
-
-            ++total;
-            if (++count == 1_000)
-            {
-                totalItems.OnNext(count);
-                count = 0;
-            }
-        }
-
-        totalItems.OnNext(count);
-
-        return total;
-    }
-
     private readonly IArchiveReader _archiveReader;
-    private readonly IIndexImportService _importService;
-    private readonly ObservableAsPropertyHelper<bool> _isBusyPropery;
+    private readonly IIndexService _indexService;
     private readonly ObservableAsPropertyHelper<string> _messagePropery;
     private readonly Subject<string> _messages = new();
 
     private ImportParameters? _parameters;
+
+    #endregion
 }

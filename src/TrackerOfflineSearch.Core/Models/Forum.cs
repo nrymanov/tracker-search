@@ -2,7 +2,7 @@ namespace TrackerOfflineSearch.Core.Models;
 
 public record Forum
 {
-    private const string Separator = " - ";
+    public const string Separator = " - ";
 
     public static readonly Forum AllForums = new();
 

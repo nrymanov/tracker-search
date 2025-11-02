@@ -19,7 +19,7 @@ public partial class MainWindow : ReactiveWindow<MainWindowViewModel>
         this.WhenActivated(d => {
 
             this.WhenAnyValue(x => x.ViewModel!.SelectedPostContent)
-                .Subscribe(content => PostContentView.LoadHtml(content)                )
+                .Subscribe(content => PostContentView.LoadHtml(content))
                 .DisposeWith(d);
 
             ViewModel!.Import.RegisterHandler(HandleImportAsync)
@@ -32,12 +32,9 @@ public partial class MainWindow : ReactiveWindow<MainWindowViewModel>
 
     private async Task HandleImportAsync(IInteractionContext<Unit, bool> interaction)
     {
-        using var scope = _serviceProvider.CreateScope();
-        var sp = scope.ServiceProvider;
-
         var dialog = new ImportWizard
         {
-            ViewModel = sp.GetRequiredService<ImportWizardViewModel>(),
+            ViewModel = _serviceProvider.GetRequiredService<ImportWizardViewModel>(),
         };
 
         await dialog.ShowDialog(this).ConfigureAwait(false);
@@ -47,12 +44,9 @@ public partial class MainWindow : ReactiveWindow<MainWindowViewModel>
 
     private async Task HandleAboutAsync(IInteractionContext<Unit, Unit> interaction)
     {
-        using var scope = _serviceProvider.CreateScope();
-        var sp = scope.ServiceProvider;
-
         var dialog = new AboutDialog
         {
-            ViewModel = sp.GetRequiredService<AboutViewModel>(),
+            ViewModel = _serviceProvider.GetRequiredService<AboutViewModel>(),
         };
 
         await dialog.ShowDialog(this).ConfigureAwait(false);

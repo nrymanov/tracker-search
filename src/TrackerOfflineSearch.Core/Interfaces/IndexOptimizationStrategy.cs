@@ -2,7 +2,7 @@ namespace TrackerOfflineSearch.Core.Interfaces;
 
 public enum IndexOptimizationStrategy
 {
-    None,
+    Minimum,
     Low,
     Normal,
     High,

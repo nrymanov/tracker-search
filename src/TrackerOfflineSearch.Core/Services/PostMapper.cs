@@ -79,29 +79,4 @@ public class PostMapper : IPostMapper
             Index = index
         };
     }
-
-    //public Document Map(Post post)
-    //{
-    //    ArgumentNullException.ThrowIfNull(post);
-
-    //    return new Document
-    //    {
-    //        new Int32Field(Post.IdField, post.Id, Field.Store.YES),
-
-    //        new StringField(Post.CreatedField, DateTools.DateToString(post.Created, AppConsts.DefaultDateResolution), Field.Store.YES),
-    //        new Int64Field(Post.SizeField, post.Size, Field.Store.YES),
-
-    //        new TextField(Post.TitleField, post.Title, Field.Store.YES),
-    //        new TextField(Post.ContentField, post.Content, Field.Store.YES),
-    //        //new StoredField(Post.ContentField, ""),
-
-    //        new StoredField(Post.HashField, post.Hash),
-
-    //        new StoredField(Post.TrackerIdField, post.TrackerId),
-
-    //        new Int32Field(Post.ForumIdField, post.ForumId, Field.Store.YES),
-    //        new StringField(Post.ForumNameField, post.ForumName, Field.Store.YES)
-    //    };
-    //}
-
 }

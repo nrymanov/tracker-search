@@ -74,8 +74,7 @@ internal sealed class Program
             .AddSingleton<IPostMapper, PostMapper>()
             .AddSingleton<IArchiveReader, ArchiveReader>()
             .AddSingleton<IBBTextConverter, BBTextConverter>()
-            .AddSingleton<IIndexSearchService, LuceneSearchService>()
-            .AddTransient<IIndexImportService, LuceneImportService>()
+            .AddSingleton<IIndexService, LuceneIndexService>()
             ;
 
         services

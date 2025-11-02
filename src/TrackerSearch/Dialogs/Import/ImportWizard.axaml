@@ -12,7 +12,7 @@
         Closing="OnClosing"
         x:Class="TrackerSearch.Dialogs.Import.ImportWizard"
         x:DataType="vm:ImportWizardViewModel"
-        Title="ImportWizard"
+        Title="Обновление индекса"
         >
   <rxui:RoutedViewHost Router="{Binding Router}">
     <rxui:RoutedViewHost.ViewLocator>
