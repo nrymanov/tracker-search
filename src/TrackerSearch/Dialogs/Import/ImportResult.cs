@@ -2,6 +2,7 @@ namespace TrackerSearch.Dialogs.Import;
 
 public record ImportResult(
     ImportParameters Parameters,
-    int TotalDocuments
+    int TotalDocuments,
+    TimeSpan Elapsed
     );
 

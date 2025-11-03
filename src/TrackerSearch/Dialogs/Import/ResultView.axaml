@@ -44,7 +44,7 @@
       <SelectableTextBlock Grid.Column="1" Grid.Row="3" Text="{Binding TotalDocuments, StringFormat='N0'}"/>
 
       <TextBlock Grid.Column="0" Grid.Row="4" Text="Время выполнения" FontWeight="SemiBold"/>
-      <SelectableTextBlock Grid.Column="1" Grid.Row="4" Text="0:20:25"/>
+      <SelectableTextBlock Grid.Column="1" Grid.Row="4" Text="{Binding ElapsedTime, StringFormat='g'}"/>
 
     </Grid>
 

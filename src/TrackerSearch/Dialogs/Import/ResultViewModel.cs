@@ -37,6 +37,7 @@ public class ResultViewModel : ActivatableViewModel, IWizardPageViewModel
         IndexOptimization = Map(importResult.Parameters.IndexOptimization);
 
         TotalDocuments = importResult.TotalDocuments;
+        ElapsedTime = TimeSpan.FromSeconds((long)importResult.Elapsed.TotalSeconds);
 
         return this;
     }

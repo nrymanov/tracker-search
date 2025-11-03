@@ -106,6 +106,8 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
     {
         try
         {
+            var sw = Stopwatch.StartNew();
+
             await _indexService.ClearAsync(ct).ConfigureAwait(false);
 
             var documentCount = await ImportDocumentsAsync(parameters, ct).ConfigureAwait(false);
@@ -120,7 +122,7 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
 
             _messages.OnNext("Импорт завершен");
 
-            return new ImportResult(parameters, documentCount);
+            return new ImportResult(parameters, documentCount, sw.Elapsed);
         }
         catch
         {
