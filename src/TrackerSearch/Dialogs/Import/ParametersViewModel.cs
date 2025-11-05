@@ -9,6 +9,8 @@ public class ParametersViewModel : ActivatableViewModel, IWizardPageViewModel
     {
         HostScreen = screen ?? throw new ArgumentNullException(nameof(screen));
 
+        SelectArchiveCommand = ReactiveCommand.CreateFromTask(SelectArchiveAsync);
+
         var canGoNext = this.WhenAnyValue(x => x.ArchivePath)
             .Select(path => !string.IsNullOrEmpty(path));
 
@@ -68,11 +70,28 @@ public class ParametersViewModel : ActivatableViewModel, IWizardPageViewModel
 
     public string IndexOptimizationTip => _indexOptimizationProperty.Value;
 
+    public ReactiveCommand<Unit, Unit> SelectArchiveCommand { get; }
+
     public ReactiveCommand<Unit, ImportParameters> GoNextCommand { get; }
+
+    // Interaction
+
+    public Interaction<Unit, string> SelectArchive { get; } = new();
 
     #endregion
 
     #region Private
+
+    private async Task SelectArchiveAsync()
+    {
+        var file = await SelectArchive.Handle(Unit.Default);
+        if (string.IsNullOrEmpty(file))
+        {
+            return;
+        }
+
+        ArchivePath = file;
+    }
 
     private static string GetIndexTypeDescription(bool isSimpleIndex) =>
         isSimpleIndex

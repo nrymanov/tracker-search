@@ -30,7 +30,7 @@ public class ResultViewModel : ActivatableViewModel, IWizardPageViewModel
 
     #region Public
 
-    public ResultViewModel WithParameters(ImportResult importResult)
+    public ResultViewModel WithParameters(ImportCompletedResult importResult)
     {
         ArchivePath = importResult.Parameters.ArchivePath;
         SimpleIndex = Map(importResult.Parameters.SimpleIndex);

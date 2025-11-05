@@ -36,7 +36,7 @@
                  Text="{Binding ArchivePath}"
                  Watermark="Выберите архив для импорта"/>
         <Button Grid.Column="1" Content="_Выбрать..."
-                Click="OnSelectArchive"/>
+                Command="{Binding SelectArchiveCommand}"/>
       </Grid>
 
       <!--Тип индекса-->

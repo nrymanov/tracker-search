@@ -20,9 +20,28 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
         ImportCommand = ReactiveCommand.CreateFromTask<ImportParameters, ImportResult>(ImportAsync);
         CancelCommand = ReactiveCommand.Create(() => { });
 
-        _messagePropery = _messages
+        _messageProperty = _messages
             .ObserveOn(RxApp.MainThreadScheduler)
             .ToProperty(this, x => x.Message);
+
+        var start = DateTimeOffset.Now;
+
+        _elapsedProperty = Observable.CombineLatest(
+                Observable.Create<DateTimeOffset>(o =>
+                {
+                    o.OnNext(DateTimeOffset.Now);
+                    o.OnCompleted();
+                    return Disposable.Empty;
+                }),
+                Observable.Interval(TimeSpan.FromSeconds(1)).StartWith(0).Select(_ => DateTimeOffset.Now),
+                (start, now) => TimeSpan.FromSeconds(Math.Floor((DateTimeOffset.Now - start).TotalSeconds))
+            )
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .TakeUntil(ImportCommand)
+            .ToProperty(this, x => x.Elapsed, deferSubscription: true);
+
+        ImportCommand.ThrownExceptions
+            .Subscribe();
 
         this.WhenActivated(d =>
         {
@@ -50,7 +69,12 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
     public ReactiveCommand<Unit, Unit> CancelCommand { get; }
 
     // Ask confirmation
-    public Task<bool> ConfirmCancelAsync() => Task.FromResult(true);
+    public async Task<bool> ConfirmCancelAsync()
+    {
+        using var p = PauseImport();
+
+        return await ConfirmCancel.Handle(Unit.Default);
+    }
 
     #endregion
 
@@ -64,11 +88,23 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
 
     public ReactiveCommand<ImportParameters, ImportResult> ImportCommand { get; }
 
-    public string Message => _messagePropery.Value;
+    public string Message => _messageProperty.Value;
+
+    public TimeSpan Elapsed => _elapsedProperty.Value;
+
+    // Interaction
+
+    public Interaction<Unit, bool> ConfirmCancel { get; } = new();
 
     #endregion
 
     #region Private
+
+    private IDisposable PauseImport()
+    {
+        _pauseEvent.Reset();
+        return Disposable.Create(_pauseEvent.Set);
+    }
 
     private async Task<int> ImportDocumentsAsync(ImportParameters parameters, CancellationToken ct)
     {
@@ -84,6 +120,9 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
             new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = ct },
             (post, token) =>
             {
+                // Если стоит на паузе — блокируем выполнение
+                _pauseEvent.Wait(token);
+
                 _indexService.Add(post);
 
                 int count = Interlocked.Increment(ref total);
@@ -122,23 +161,27 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
 
             _messages.OnNext("Импорт завершен");
 
-            return new ImportResult(parameters, documentCount, sw.Elapsed);
+            return new ImportCompletedResult(parameters, documentCount, sw.Elapsed);
         }
-        catch
+        catch (Exception err)
         {
-            //
-            // Доделать обработку ошибок от Writer-ов
-            //
-            await _indexService.RollbackAsync(ct).ConfigureAwait(false);
+            await _indexService.RollbackAsync(default).ConfigureAwait(false);
 
-            throw;
+            //if (err is OperationCanceledException)
+            //{
+            //    throw;
+            //}
+
+            return new ImportFailedResult(parameters, err);
         }
     }
 
     private readonly IArchiveReader _archiveReader;
     private readonly IIndexService _indexService;
-    private readonly ObservableAsPropertyHelper<string> _messagePropery;
+    private readonly ObservableAsPropertyHelper<string> _messageProperty;
+    private readonly ObservableAsPropertyHelper<TimeSpan> _elapsedProperty;
     private readonly Subject<string> _messages = new();
+    private readonly ManualResetEventSlim _pauseEvent = new(initialState: true);
 
     private ImportParameters? _parameters;
 

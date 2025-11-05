@@ -7,7 +7,6 @@
              MinWidth="600" MinHeight="450"
              x:Class="TrackerSearch.Dialogs.Import.ResultView"
              x:DataType="vm:ResultViewModel"
-             x:CompileBindings="false"
              >
 
   <Grid RowDefinitions="Auto, *, Auto">

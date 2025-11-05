@@ -3,10 +3,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:TrackerSearch.Dialogs.Import"
-             mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="450"
-             
-             x:Class="TrackerSearch.Dialogs.Import.ProgressView"
-             x:DataType="vm:ProgressViewModel"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="TrackerSearch.Dialogs.Import.ErrorView"
+             x:DataType="vm:ErrorViewModel"
              >
 
   <Grid RowDefinitions="Auto, *, Auto">
@@ -19,43 +18,22 @@
             >
       <TextBlock Classes="wizard-page-title"
                  HorizontalAlignment="Center"
-                 Text="Импорт документов"
+                 Text="Ошибка импорта документов"
                  />
     </Border>
 
     <!--Content-->
     <Grid Grid.Row="1"
           RowDefinitions="Auto, *"
-          RowSpacing="5"
-          Margin="40"
+          ColumnSpacing="5" RowSpacing="10"
+          Margin="40" Background="green"
           >
 
-      <Grid Grid.Row="0" Margin="10" ColumnDefinitions="Auto, *">
-        <Svg Width="60" Path="/Assets/import_small.svg"/>
+      <TextBlock Grid.Row="0" Text="Во время импорта документов произошла ошибка" FontWeight="SemiBold"/>
 
-        <StackPanel Grid.Column="1"
-                    VerticalAlignment="Center"
-                    HorizontalAlignment="Stretch"
-                    Spacing="10"
-                    Margin="10, 0"
-                    >
-          <ProgressBar IsIndeterminate="True"/>
-
-          <Grid ColumnDefinitions="*, Auto" ColumnSpacing="5">
-            <TextBlock Text="{Binding Message, FallbackValue='Выполняется импорт документов. Пожалуйста подождите...'}"
-                       TextTrimming="CharacterEllipsis"/>
-            <TextBlock Grid.Column="1" Text="{Binding Elapsed, StringFormat='g', FallbackValue=0:00:00}"/>
-          </Grid>
-
-        </StackPanel>
-      </Grid>
-
-      <ListBox Grid.Row="1" 
-               BorderThickness="1"
-               BorderBrush="{DynamicResource SystemControlTransientBorderBrush}"
-               >
-      </ListBox>
-
+      <SelectableTextBlock Grid.Row="1"
+                           Text="{Binding ErrorMessage}"
+                           TextWrapping="Wrap"/>
     </Grid>
 
     <!--Buttons-->
@@ -68,7 +46,7 @@
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
                   Spacing="5"
                   Classes="dlg-footer">
-        <Button Content="Отмена"
+        <Button Content="Закрыть"
                 IsDefault="True" IsCancel="True"
                 Command="{Binding CancelCommand}"
                 />

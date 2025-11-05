@@ -8,23 +8,22 @@ public partial class ParametersView : ReactiveUserControl<ParametersViewModel>
     public ParametersView()
     {
         InitializeComponent();
+
+        this.WhenActivated(d =>
+            ViewModel!.SelectArchive
+                .RegisterHandler(SelectArchiveAsync)
+                .DisposeWith(d)
+        );
     }
 
-    private async void OnSelectArchive(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async Task SelectArchiveAsync(IInteractionContext<Unit, string> interaction)
     {
-        var vm = ViewModel;
-        if (vm is null)
-        {
-            return;
-        }
-        
         var topLevel = TopLevel.GetTopLevel(this);
         if (topLevel is null)
         {
             return;
         }
 
-        // Start async operation to open the dialog.
         var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "Open Text File",
@@ -33,11 +32,11 @@ public partial class ParametersView : ReactiveUserControl<ParametersViewModel>
                 new FilePickerFileType("Сжатый архив форума") { Patterns = ["*.xml.xz"] },
                 FilePickerFileTypes.All,
                 ],
-        }).ConfigureAwait(true);
+        }).ConfigureAwait(false);
 
         if (files.Count == 1)
         {
-            vm.ArchivePath = files[0].TryGetLocalPath() ?? "";
+            interaction.SetOutput(files[0].TryGetLocalPath() ?? "");
         }
     }
 }

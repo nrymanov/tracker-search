@@ -23,12 +23,8 @@ public class MainWindowViewModel : ActivatableViewModel
 
         #region Команды
 
-        _import = new();
-
         ImportCommand = ReactiveCommand.CreateFromTask<bool>(ImportAsync);
         ImportCommand.Subscribe(_refreshSubj);
-
-        _about = new();
 
         AboutCommand = ReactiveCommand.CreateFromTask(AboutAsync);
 
@@ -162,13 +158,15 @@ public class MainWindowViewModel : ActivatableViewModel
 
     public PostInfoViewModel? SelectedPostInfo => _selectedPostInfoProperty.Value;
 
+    // Interaction
+
+    public Interaction<Unit, bool> Import { get; } = new();
+
+    public Interaction<Unit, Unit> About { get; } = new();
+
     // Команды
 
-    public Interaction<Unit, bool> Import => _import;
-
     public ReactiveCommand<Unit, bool> ImportCommand { get; }
-
-    public  Interaction<Unit, Unit> About => _about;
 
     public ReactiveCommand<Unit, Unit> AboutCommand { get; }
 
@@ -223,11 +221,7 @@ public class MainWindowViewModel : ActivatableViewModel
 
     private async Task<bool> ImportAsync()
     {
-        var importCompleted = await _import.Handle(Unit.Default);
-
-        // HACK
-        importCompleted = true;
-
+        var importCompleted = await Import.Handle(Unit.Default);
         if (importCompleted)
         {
             _indexService.Refresh();
@@ -235,7 +229,7 @@ public class MainWindowViewModel : ActivatableViewModel
         return importCompleted;
     }
 
-    private async Task AboutAsync() => await _about.Handle(Unit.Default);
+    private async Task AboutAsync() => await About.Handle(Unit.Default);
 
     /// <summary>
     /// Возвращает коллекцию форумов, включая всех их предков (родительские форумы) до корневого уровня.
@@ -330,9 +324,6 @@ public class MainWindowViewModel : ActivatableViewModel
     private readonly ObservableAsPropertyHelper<PostQuery> _queryProperty;
 
     private readonly BehaviorSubject<bool> _refreshSubj;
-
-    private readonly Interaction<Unit, bool> _import;
-    private readonly Interaction<Unit, Unit> _about;
 
     #endregion
 }
