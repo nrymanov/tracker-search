@@ -37,9 +37,9 @@ public partial class MainWindow : ReactiveWindow<MainWindowViewModel>
             ViewModel = _serviceProvider.GetRequiredService<ImportWizardViewModel>(),
         };
 
-        await dialog.ShowDialog(this).ConfigureAwait(false);
+        var result = await dialog.ShowDialog<bool>(this).ConfigureAwait(false);
 
-        interaction.SetOutput(output: false);
+        interaction.SetOutput(result);
     }
 
     private async Task HandleAboutAsync(IInteractionContext<Unit, Unit> interaction)

@@ -25,6 +25,8 @@ public class ArchiveReader : IArchiveReader
 
         await reader.MoveToContentAsync().ConfigureAwait(false);
 
+        //int count = 0;
+
         while (!reader.EOF)
         {
             ct.ThrowIfCancellationRequested();
@@ -35,6 +37,12 @@ public class ArchiveReader : IArchiveReader
                 yield break;
 
             yield return post;
+
+            //if (++count > 20_000)
+            //{
+            //    throw new ArgumentOutOfRangeException(nameof(arhiveFilePath));
+            //    //break;
+            //}
         }
     }
 

@@ -8,7 +8,8 @@ public class PostDocument
     private readonly Document _document;
 
     private readonly Int32Field _idField;
-    private readonly StringField _createdField;
+    private readonly Int64Field _createdField;
+    private readonly NumericDocValuesField _createdSortField;
     private readonly Int64Field _sizeField;
     private readonly TextField _titleField;
     private readonly TextField _contentField;
@@ -20,7 +21,8 @@ public class PostDocument
     public PostDocument()
     {
         _idField = new Int32Field(Post.IdField, 0, Field.Store.YES);
-        _createdField = new StringField(Post.CreatedField, "", Field.Store.YES);
+        _createdField = new Int64Field(Post.CreatedField, 0, Field.Store.YES);
+        _createdSortField = new NumericDocValuesField(Post.CreatedSortField, 0);
         _sizeField = new Int64Field(Post.SizeField, 0, Field.Store.YES);
         _titleField = new TextField(Post.TitleField, "", Field.Store.YES);
         _contentField = new TextField(Post.ContentField, "", Field.Store.YES);
@@ -33,6 +35,7 @@ public class PostDocument
         {
             _idField,
             _createdField,
+            _createdSortField,
             _sizeField,
             _titleField,
             _contentField,
@@ -46,7 +49,8 @@ public class PostDocument
     public Document UpdateFrom(Post post)
     {
         _idField.SetInt32Value(post.Id);
-        _createdField.SetStringValue(DateTools.DateToString(post.Created, AppConsts.DefaultDateResolution));
+        _createdField.SetInt64Value(post.Created.Ticks);
+        _createdSortField.SetInt64Value(post.Created.Ticks);
         _sizeField.SetInt64Value(post.Size);
         _titleField.SetStringValue(post.Title);
         _contentField.SetStringValue(post.Content);

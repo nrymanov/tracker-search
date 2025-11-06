@@ -20,24 +20,17 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
         ImportCommand = ReactiveCommand.CreateFromTask<ImportParameters, ImportResult>(ImportAsync);
         CancelCommand = ReactiveCommand.Create(() => { });
 
-        _messageProperty = _messages
+        _messageProperty = _progressMessageSubject
             .ObserveOn(RxApp.MainThreadScheduler)
             .ToProperty(this, x => x.Message);
 
-        var start = DateTimeOffset.Now;
-
-        _elapsedProperty = Observable.CombineLatest(
-                Observable.Create<DateTimeOffset>(o =>
-                {
-                    o.OnNext(DateTimeOffset.Now);
-                    o.OnCompleted();
-                    return Disposable.Empty;
-                }),
-                Observable.Interval(TimeSpan.FromSeconds(1)).StartWith(0).Select(_ => DateTimeOffset.Now),
-                (start, now) => TimeSpan.FromSeconds(Math.Floor((DateTimeOffset.Now - start).TotalSeconds))
+        _elapsedProperty = ImportCommand.IsExecuting
+            .SelectMany(isRunning =>
+                isRunning
+                    ? Observable.Interval(TimeSpan.FromSeconds(1)).StartWith(0).Select(i => TimeSpan.FromSeconds(i))
+                    : Observable.Return(TimeSpan.Zero)
             )
             .ObserveOn(RxApp.MainThreadScheduler)
-            .TakeUntil(ImportCommand)
             .ToProperty(this, x => x.Elapsed, deferSubscription: true);
 
         ImportCommand.ThrownExceptions
@@ -68,7 +61,6 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
 
     public ReactiveCommand<Unit, Unit> CancelCommand { get; }
 
-    // Ask confirmation
     public async Task<bool> ConfirmCancelAsync()
     {
         using var p = PauseImport();
@@ -106,37 +98,37 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
         return Disposable.Create(_pauseEvent.Set);
     }
 
-    private async Task<int> ImportDocumentsAsync(ImportParameters parameters, CancellationToken ct)
+    private async Task<int> ImportDocumentsAsync(IIndexWriterSession writerSession, string archivePath, CancellationToken ct)
     {
         int total = 0;
         var lastTime = Stopwatch.StartNew();
 
         var oneSecond = TimeSpan.FromSeconds(1);
 
-        _messages.OnNext($"Импортировано {0:N0} документов");
+        _progressMessageSubject.OnNext($"Импортировано {0:N0} документов");
 
         await Parallel.ForEachAsync(
-            _archiveReader.ReadPostsAsync(parameters.ArchivePath, ct),
+            _archiveReader.ReadPostsAsync(archivePath, ct),
             new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = ct },
             (post, token) =>
             {
                 // Если стоит на паузе — блокируем выполнение
                 _pauseEvent.Wait(token);
 
-                _indexService.Add(post);
+                writerSession.Add(post);
 
                 int count = Interlocked.Increment(ref total);
 
                 if (lastTime.Elapsed >= oneSecond)
                 {
                     lastTime.Restart();
-                    _messages.OnNext($"Импортировано {count:N0} документов");
+                    _progressMessageSubject.OnNext($"Импортировано {count:N0} документов");
                 }
 
                 return ValueTask.CompletedTask;
             }).ConfigureAwait(false);
 
-        _messages.OnNext($"Импортировано {total:N0} документов");
+        _progressMessageSubject.OnNext($"Импортировано {total:N0} документов");
 
         return total;
     }
@@ -145,28 +137,26 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
     {
         try
         {
+            using var session = _indexService.OpenWriterSession();
+
             var sw = Stopwatch.StartNew();
 
-            await _indexService.ClearAsync(ct).ConfigureAwait(false);
+            await session.ClearAsync(ct).ConfigureAwait(false);
 
-            var documentCount = await ImportDocumentsAsync(parameters, ct).ConfigureAwait(false);
+            var documentCount = await ImportDocumentsAsync(session, parameters.ArchivePath, ct).ConfigureAwait(false);
 
-            _messages.OnNext("Оптимизация индекса");
-            await _indexService.OptimizeAsync(parameters.IndexOptimization, ct).ConfigureAwait(false);
+            _progressMessageSubject.OnNext("Оптимизация индекса");
+            await session.OptimizeAsync(parameters.IndexOptimization, ct).ConfigureAwait(false);
 
-            _messages.OnNext("Завершение импорта");
-            await _indexService.CommitAsync(ct).ConfigureAwait(false);
+            _progressMessageSubject.OnNext("Завершение импорта");
+            await session.CommitAsync(ct).ConfigureAwait(false);
 
-            _indexService.Refresh();
-
-            _messages.OnNext("Импорт завершен");
+            _progressMessageSubject.OnNext("Импорт завершен");
 
             return new ImportCompletedResult(parameters, documentCount, sw.Elapsed);
         }
         catch (Exception err)
         {
-            await _indexService.RollbackAsync(default).ConfigureAwait(false);
-
             //if (err is OperationCanceledException)
             //{
             //    throw;
@@ -180,7 +170,7 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
     private readonly IIndexService _indexService;
     private readonly ObservableAsPropertyHelper<string> _messageProperty;
     private readonly ObservableAsPropertyHelper<TimeSpan> _elapsedProperty;
-    private readonly Subject<string> _messages = new();
+    private readonly Subject<string> _progressMessageSubject = new();
     private readonly ManualResetEventSlim _pauseEvent = new(initialState: true);
 
     private ImportParameters? _parameters;

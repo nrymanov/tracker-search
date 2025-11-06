@@ -55,15 +55,13 @@ public class PostMapper : IPostMapper
 
     public Post Map(Document doc, int index)
     {
-        ArgumentNullException.ThrowIfNull(doc);
-
-        var created = DateTime.SpecifyKind(DateTools.StringToDate(doc.Get(Post.CreatedField)), DateTimeKind.Utc);
+        ArgumentNullException.ThrowIfNull(doc);        
 
         return new Post
         {
             Id = doc.GetField(Post.IdField).GetInt32ValueOrDefault(),
 
-            Created = created,
+            Created = new DateTime(doc.GetField(Post.CreatedField).GetInt64ValueOrDefault()),
             Size = doc.GetField(Post.SizeField).GetInt64ValueOrDefault(),
 
             Title = doc.Get(Post.TitleField),

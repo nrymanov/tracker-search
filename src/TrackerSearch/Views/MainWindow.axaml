@@ -28,7 +28,7 @@
     <Grid Grid.Column="1" RowDefinitions="Auto, *" RowSpacing="5">
       <!--Фильтр форумов-->
       <TextBox Grid.Row="0"
-               Text="{Binding ForumFilter, UpdateSourceTrigger=PropertyChanged}"
+               Text="{Binding ForumFilterText, UpdateSourceTrigger=PropertyChanged}"
                Classes="clearButton"
                Watermark="Фильтр форумов"
                BorderBrush="LightGray"/>
@@ -81,7 +81,7 @@
           RowSpacing="5">
 
       <TextBox Grid.Row="0" Grid.ColumnSpan="3"
-               Text="{Binding PostFilter, UpdateSourceTrigger=PropertyChanged}"
+               Text="{Binding PostFilterText, UpdateSourceTrigger=PropertyChanged}"
                Classes="clearButton"
                Watermark="Фильтр по заголовку или содержимому поста"
                BorderBrush="LightGray"/>

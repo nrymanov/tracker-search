@@ -6,6 +6,7 @@ public record Post
 {
     public const string IdField = nameof(Id);
     public const string CreatedField = nameof(Created);
+    public const string CreatedSortField = nameof(Created) + "_sort";
     public const string SizeField = nameof(Size);
     public const string TitleField = nameof(Title);
     public const string ContentField = nameof(Content);
@@ -20,7 +21,7 @@ public record Post
     private const string TrackerNTemplate = "http://bt{0}.t-ru.org/ann?magnet";
     private const string MagnetUrlTemplate = "magnet:?xt=urn:btih:{0}&tr={1}&dn={2}";
 
-    public static Post Null => new()
+    public static Post Null { get; } = new()
     {
         Id = 0,
         Created = DateTime.MinValue,

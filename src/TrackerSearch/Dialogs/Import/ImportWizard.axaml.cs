@@ -15,9 +15,13 @@ public partial class ImportWizard : ReactiveWindow<ImportWizardViewModel>
                 return;
             }
 
+            vm.CloseCommand
+                .Subscribe(result => Close(result))
+                .DisposeWith(d);
+
             vm.CancelCommand
                 .Where(canClose => canClose)
-                .Subscribe(_ => Close())
+                .Subscribe(_ => Close(dialogResult: false))
                 .DisposeWith(d);
         });
     }
@@ -31,7 +35,7 @@ public partial class ImportWizard : ReactiveWindow<ImportWizardViewModel>
         }
 
         // Окно закрывается в результате действия пользователя (нажатие на крестик, пункт в системном меню)
-        // Дадим шанс проверить возможность отмены и спросить падтверждение от пользователя.
+        // Дадим шанс проверить возможность отмены и спросить подтверждение от пользователя.
         // Для этого явно запустим команду модели Cancel, а она уже опросит страницы.
         var vm = ViewModel;
         if (vm is null)

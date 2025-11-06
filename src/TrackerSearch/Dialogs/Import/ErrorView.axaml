@@ -26,7 +26,7 @@
     <Grid Grid.Row="1"
           RowDefinitions="Auto, *"
           ColumnSpacing="5" RowSpacing="10"
-          Margin="40" Background="green"
+          Margin="40" 
           >
 
       <TextBlock Grid.Row="0" Text="Во время импорта документов произошла ошибка" FontWeight="SemiBold"/>
@@ -48,7 +48,7 @@
                   Classes="dlg-footer">
         <Button Content="Закрыть"
                 IsDefault="True" IsCancel="True"
-                Command="{Binding CancelCommand}"
+                Command="{Binding CloseCommand}"
                 />
       </StackPanel>
     </Border>

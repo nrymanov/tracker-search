@@ -9,6 +9,7 @@ public class ResultViewModel : ActivatableViewModel, IWizardPageViewModel
     {
         HostScreen = screen ?? throw new ArgumentNullException(nameof(screen));
         CancelCommand = ReactiveCommand.Create(() => { });
+        CloseCommand = ReactiveCommand.Create(() => true);
     }
 
     #region IRoutableViewModel
@@ -23,18 +24,19 @@ public class ResultViewModel : ActivatableViewModel, IWizardPageViewModel
 
     public ReactiveCommand<Unit, Unit> CancelCommand { get; }
 
-    // Ask confirmation
     public Task<bool> ConfirmCancelAsync() => Task.FromResult(true);
 
     #endregion
 
     #region Public
 
+    public ReactiveCommand<Unit, bool> CloseCommand { get; }
+
     public ResultViewModel WithParameters(ImportCompletedResult importResult)
     {
         ArchivePath = importResult.Parameters.ArchivePath;
-        SimpleIndex = Map(importResult.Parameters.SimpleIndex);
-        IndexOptimization = Map(importResult.Parameters.IndexOptimization);
+        SimpleIndex = ToDisplayString(importResult.Parameters.SimpleIndex);
+        IndexOptimization = ToDisplayString(importResult.Parameters.IndexOptimization);
 
         TotalDocuments = importResult.TotalDocuments;
         ElapsedTime = TimeSpan.FromSeconds((long)importResult.Elapsed.TotalSeconds);
@@ -56,10 +58,10 @@ public class ResultViewModel : ActivatableViewModel, IWizardPageViewModel
 
     #region Private
 
-    private static string Map(bool isSimpleIndex) =>
+    private static string ToDisplayString(bool isSimpleIndex) =>
         isSimpleIndex ? "Да" : "Нет";
 
-    private static string Map(IndexOptimizationStrategy optimizationStrategy) =>
+    private static string ToDisplayString(IndexOptimizationStrategy optimizationStrategy) =>
         optimizationStrategy switch
         {
             IndexOptimizationStrategy.Minimum => "Минимальная",

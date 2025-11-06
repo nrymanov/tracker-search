@@ -59,7 +59,7 @@
                   Classes="dlg-footer">
         <Button Content="Закрыть"
                 IsDefault="True" IsCancel="True"
-                Command="{Binding CancelCommand}"
+                Command="{Binding CloseCommand}"
                 />
       </StackPanel>
     </Border>

@@ -10,6 +10,7 @@ public class ImportWizardViewModel : ActivatableViewModel, IScreen
         IIndexService indexService
         )
     {
+        CloseCommand = ReactiveCommand.Create<bool, bool>(result => result);
         CancelCommand = ReactiveCommand.CreateFromTask(ConfirmCancelAsync);
 
         _paramsPage = new ParametersViewModel(this);
@@ -30,6 +31,12 @@ public class ImportWizardViewModel : ActivatableViewModel, IScreen
             .OfType<ImportFailedResult>()
             .Select(p => _errorPage.WithParameters(p))
             .InvokeCommand<IRoutableViewModel>(Router.Navigate);
+
+        Observable.Merge(
+            _resultPage.CloseCommand,
+            _errorPage.CloseCommand
+            )
+            .InvokeCommand(CloseCommand);
 
         Observable.Merge(
             _paramsPage.CancelCommand,
@@ -54,6 +61,8 @@ public class ImportWizardViewModel : ActivatableViewModel, IScreen
 
     #region Public
 
+    public ReactiveCommand<bool, bool> CloseCommand { get; }
+
     public ReactiveCommand<Unit, bool> CancelCommand { get; }
 
     #endregion
@@ -62,7 +71,7 @@ public class ImportWizardViewModel : ActivatableViewModel, IScreen
 
     private async Task<bool> ConfirmCancelAsync()
     {
-        var current = await Router.CurrentViewModel.Take(1);
+        var current = await Router.CurrentViewModel.FirstAsync();
 
         if (current is IWizardPageViewModel vm)
         {
