@@ -1,0 +1,27 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Design.PreviewWith>
+    <Border Padding="20">
+      <!-- Add Controls for Previewer Here -->
+
+      <Border Classes="info-tip">
+        <TextBlock Text="It is info tip message"/>
+      </Border>
+
+    </Border>
+  </Design.PreviewWith>
+
+  <!-- Add Styles Here -->
+  <Style Selector="Border.info-tip">
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource SystemControlTransientBorderBrush}"/>
+    <Setter Property="Background" Value="LightBlue"/>
+    <Setter Property="CornerRadius" Value="3"/>
+
+    <Style Selector="^ TextBlock">
+      <Setter Property="Margin" Value="10"/>
+      <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+  </Style>
+
+</Styles>

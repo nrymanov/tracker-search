@@ -9,17 +9,23 @@ public partial class ProgressView : ReactiveUserControl<ProgressViewModel>
     {
         InitializeComponent();
 
-        this.WhenActivated(d => 
-            ViewModel!.ConfirmCancel
-                .RegisterHandler(HandleImportAsync)
-                .DisposeWith(d)
-        );
+        this.WhenActivated(d =>
+        {
+            var vm = ViewModel;
+            if (vm is null)
+            {
+                return;
+            }
+
+            vm.ConfirmCancel
+                .RegisterHandler(ConfirmCancelAsync)
+                .DisposeWith(d);
+        });
     }
 
-    private async Task HandleImportAsync(IInteractionContext<Unit, bool> interaction)
+    private async Task ConfirmCancelAsync(IInteractionContext<Unit, bool> interaction)
     {
-        var topLevel = TopLevel.GetTopLevel(this) as Window;
-        if (topLevel is null)
+        if (TopLevel.GetTopLevel(this) is not Window topLevel)
         {
             interaction.SetOutput(output: false);
             return;

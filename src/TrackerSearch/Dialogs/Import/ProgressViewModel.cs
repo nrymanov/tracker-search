@@ -24,14 +24,40 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
             .ObserveOn(RxApp.MainThreadScheduler)
             .ToProperty(this, x => x.Message);
 
-        _elapsedProperty = ImportCommand.IsExecuting
-            .SelectMany(isRunning =>
-                isRunning
-                    ? Observable.Interval(TimeSpan.FromSeconds(1)).StartWith(0).Select(i => TimeSpan.FromSeconds(i))
-                    : Observable.Return(TimeSpan.Zero)
-            )
+        //
+        // Пока команда не работает - пропускаем события и возвращаем константу.
+        // Когда команда выполняется, переключаемся на таймер и слушаем его до тех пор,
+        // пока команда не просигналет об окончании выполнения.
+        //
+        _elapsedProperty =
+            Observable.Concat(
+                // Фаза 1: Ожидание начала выполнения
+                ImportCommand.IsExecuting
+                    .TakeWhile(isRunning => !isRunning)
+                    .Select(_ => TimeSpan.Zero),
+
+                // Фаза 2: Таймер во время выполнения
+                Observable.Interval(TimeSpan.FromSeconds(1)).StartWith(-1)
+                    .TakeUntil(ImportCommand.IsExecuting.Where(isRunning => !isRunning))
+                    .Select(i => TimeSpan.FromSeconds(i + 1))
+                )
             .ObserveOn(RxApp.MainThreadScheduler)
+            //.Do(elapsed => Debug.WriteLine($"Updating Elapsed: {elapsed}"), () => Debug.WriteLine("Updating Elapsed: COMPLETED"))
             .ToProperty(this, x => x.Elapsed, deferSubscription: true);
+
+        _infoTipProperty = 
+            Observable.Concat(
+                ImportCommand.IsExecuting
+                    .TakeWhile(isRunning => !isRunning)
+                    .Select(_ => GetTip(0)),
+
+                Observable.Interval(TimeSpan.FromSeconds(10)).StartWith(-1)
+                    .TakeUntil(ImportCommand.IsExecuting.Where(isRunning => !isRunning))
+                    .Select(idx => GetTip(idx + 1))
+                )
+            .ObserveOn(RxApp.MainThreadScheduler)
+            //.Do(tip => Debug.WriteLine($"Updating tip: {tip}"), () => Debug.WriteLine("Updating tip: COMPLETED"))
+            .ToProperty(this, x => x.InfoTip);
 
         ImportCommand.ThrownExceptions
             .Subscribe();
@@ -83,6 +109,8 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
     public string Message => _messageProperty.Value;
 
     public TimeSpan Elapsed => _elapsedProperty.Value;
+
+    public string InfoTip => _infoTipProperty.Value;
 
     // Interaction
 
@@ -166,6 +194,24 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
         }
     }
 
+    private static readonly string[] InfoTips = [
+        "Во время выпонения импорта размер индекса может удваиваться в зависимости от выбранной стратегии оптимизации.",
+        "Чтобы найти точную фразу, заключите ее в кавычки. Например: \"белое солнце\"",
+        "Чтобы слово обязательно было в результатах, поставьте перед ним +. Например: +рецепт яблочный пирог",
+        "Чтобы исключить слово из поиска, поставьте перед ним -. Например: яблоко -сок (найдется про яблоки, но не про сок)",
+        "Чтобы найти любое из нескольких слов, используйте OR (или). Например: кот OR собака OR хомяк",
+        "Чтобы искать с учетом опечаток, добавьте ~ в конец слова. Например: шоколад~ (найдет \"шаколад\", \"шоколат\")",
+        "Чтобы найти слова, которые находятся рядом, используйте ~ после фразы. Например: \"быстрая доставка\"~3 (слова в пределах 3 слов друг от друга)",
+        "Чтобы найти слова по шаблону, используйте * и ?. Например: к*т (найдет \"кот\", \"кристалл\", \"квест\")"
+        ];
+
+    private static string GetTip(long index)
+    {
+        var tipIndex = index % InfoTips.Length;
+
+        return InfoTips[tipIndex];
+    }
+
     private readonly IArchiveReader _archiveReader;
     private readonly IIndexService _indexService;
     private readonly ObservableAsPropertyHelper<string> _messageProperty;
@@ -174,6 +220,7 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
     private readonly ManualResetEventSlim _pauseEvent = new(initialState: true);
 
     private ImportParameters? _parameters;
+    private readonly ObservableAsPropertyHelper<string> _infoTipProperty;
 
     #endregion
 }

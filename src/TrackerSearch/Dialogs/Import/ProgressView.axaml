@@ -50,11 +50,9 @@
         </StackPanel>
       </Grid>
 
-      <ListBox Grid.Row="1" 
-               BorderThickness="1"
-               BorderBrush="{DynamicResource SystemControlTransientBorderBrush}"
-               >
-      </ListBox>
+      <Border Grid.Row="1" Classes="info-tip">
+        <TextBlock Text="{Binding InfoTip}"/>
+      </Border>
 
     </Grid>
 

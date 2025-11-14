@@ -46,12 +46,8 @@
                       IsChecked="{Binding SimpleIndex}"/>
       </Grid>
 
-      <Border Grid.Row="4" BorderThickness="1"
-              BorderBrush="{DynamicResource SystemControlTransientBorderBrush}"
-              Background="lightblue" CornerRadius="3">
-        <TextBlock Text="{Binding IndexTypeTip, FallbackValue='Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'}" 
-                   Margin="10"
-                   TextWrapping="Wrap"/>
+      <Border Grid.Row="4" Classes="info-tip">
+        <TextBlock Text="{Binding IndexTypeTip, FallbackValue='Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'}" />
       </Border>
 
       <!--Оптимизация индекса-->
@@ -65,13 +61,8 @@
                 Value="{Binding Optimization}"
                 />
       </Grid>
-      <Border Grid.Row="7" BorderThickness="1"
-              BorderBrush="{DynamicResource SystemControlTransientBorderBrush}"
-              Background="lightblue"
-              CornerRadius="3">
-        <TextBlock Text="{Binding IndexOptimizationTip, FallbackValue='Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'}" 
-                   Margin="10"
-                   TextWrapping="Wrap"/>
+      <Border Grid.Row="7" Classes="info-tip">
+        <TextBlock Text="{Binding IndexOptimizationTip, FallbackValue='Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'}" />
       </Border>
     </Grid>
     </ScrollViewer>

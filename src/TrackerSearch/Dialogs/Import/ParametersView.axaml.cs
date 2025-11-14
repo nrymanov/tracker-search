@@ -10,10 +10,18 @@ public partial class ParametersView : ReactiveUserControl<ParametersViewModel>
         InitializeComponent();
 
         this.WhenActivated(d =>
+        {
+            var vm = ViewModel;
+
+            if (vm is null)
+            {
+                return;
+            }
+
             ViewModel!.SelectArchive
                 .RegisterHandler(SelectArchiveAsync)
-                .DisposeWith(d)
-        );
+                .DisposeWith(d);
+        });
     }
 
     private async Task SelectArchiveAsync(IInteractionContext<Unit, string> interaction)
