@@ -1,6 +1,7 @@
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Documents;
+using Lucene.Net.Documents.Extensions;
 using Lucene.Net.Index;
 using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
@@ -17,13 +18,12 @@ public sealed class LuceneIndexService : IIndexService, IDisposable
 {
     #region Constructor
 
-    public LuceneIndexService(ILogger<LuceneIndexService> logger, IPostMapper mapper)
+    public LuceneIndexService(ILogger<LuceneIndexService> logger)
     {
         //_indexPath = @"E:\Temp\ShortIndex";
         _indexPath = @"E:\Temp\Index"; // read from settings
 
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
 
         if (!System.IO.Directory.Exists(_indexPath))
         {
@@ -106,11 +106,13 @@ public sealed class LuceneIndexService : IIndexService, IDisposable
             new SortField(Post.CreatedSortField, SortFieldType.INT64, true)
             );
 
+        _logger.LogDebug("Executing query {query}", query);
+
         var topDocs = searcher.Search(query, limit, sort);
 
         var posts = topDocs.ScoreDocs
             .Select(sd => searcher.Doc(sd.Doc))
-            .Select(_mapper.Map)
+            .Select(MapToPost)
             .ToList();
 
         return new SearchResult(posts, (int)topDocs.TotalHits);
@@ -211,6 +213,31 @@ public sealed class LuceneIndexService : IIndexService, IDisposable
 
     #region Private
 
+    private static Post MapToPost(Document doc, int index)
+    {
+        ArgumentNullException.ThrowIfNull(doc);
+
+        return new Post
+        {
+            Id = doc.GetField(Post.IdField).GetInt32ValueOrDefault(),
+
+            Created = new DateTime(doc.GetField(Post.CreatedField).GetInt64ValueOrDefault()),
+            Size = doc.GetField(Post.SizeField).GetInt64ValueOrDefault(),
+
+            Title = doc.Get(Post.TitleField),
+            Content = doc.Get(Post.ContentField),
+
+            Hash = doc.Get(Post.HashField),
+
+            TrackerId = doc.GetField(Post.TrackerIdField).GetInt32ValueOrDefault(),
+
+            ForumId = doc.GetField(Post.ForumIdField).GetInt32ValueOrDefault(),
+            ForumName = doc.Get(Post.ForumNameField),
+
+            Index = index
+        };
+    }
+
     /// <summary>
     /// Возвращает коллекцию форумов, включая всех их предков (родительские форумы) до корневого уровня.
     /// Для отсутствующих в исходной коллекции предков создаются новые элементы.
@@ -264,7 +291,7 @@ public sealed class LuceneIndexService : IIndexService, IDisposable
         var query = new BooleanQuery();
         foreach (var q in filters.Where(f => f is not null))
         {
-            query.Add(q, Occur.MUST);
+            query.Add(q, Occur.SHOULD);
         }
 
         return query;
@@ -325,7 +352,6 @@ public sealed class LuceneIndexService : IIndexService, IDisposable
 
     private readonly string _indexPath;
     private readonly ILogger<LuceneIndexService> _logger;
-    private readonly IPostMapper _mapper;
 
     private readonly FSDirectory _directory;
     private readonly Analyzer _analyzer;

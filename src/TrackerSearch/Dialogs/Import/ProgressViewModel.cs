@@ -126,7 +126,7 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
         return Disposable.Create(_pauseEvent.Set);
     }
 
-    private async Task<int> ImportDocumentsAsync(IIndexWriterSession writerSession, string archivePath, CancellationToken ct)
+    private async Task<int> ImportDocumentsAsync(IIndexWriterSession writerSession, string archivePath, bool simpleIndex, CancellationToken ct)
     {
         int total = 0;
         var lastTime = Stopwatch.StartNew();
@@ -136,7 +136,7 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
         _progressMessageSubject.OnNext($"Импортировано {0:N0} документов");
 
         await Parallel.ForEachAsync(
-            _archiveReader.ReadPostsAsync(archivePath, ct),
+            _archiveReader.ReadPostsAsync(archivePath, simpleIndex, ct),
             new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = ct },
             (post, token) =>
             {
@@ -171,7 +171,7 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
 
             await session.ClearAsync(ct).ConfigureAwait(false);
 
-            var documentCount = await ImportDocumentsAsync(session, parameters.ArchivePath, ct).ConfigureAwait(false);
+            var documentCount = await ImportDocumentsAsync(session, parameters.ArchivePath, parameters.SimpleIndex, ct).ConfigureAwait(false);
 
             _progressMessageSubject.OnNext("Оптимизация индекса");
             await session.OptimizeAsync(parameters.IndexOptimization, ct).ConfigureAwait(false);

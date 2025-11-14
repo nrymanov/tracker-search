@@ -71,7 +71,6 @@ internal sealed class Program
         logger.Verbose("ConfigureServices - begin");
 
         services
-            .AddSingleton<IPostMapper, PostMapper>()
             .AddSingleton<IArchiveReader, ArchiveReader>()
             .AddSingleton<IBBTextConverter, BBTextConverter>()
             .AddSingleton<IIndexService, LuceneIndexService>()

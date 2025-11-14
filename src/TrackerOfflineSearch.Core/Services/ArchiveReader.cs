@@ -9,14 +9,14 @@ namespace TrackerOfflineSearch.Core.Services;
 
 public class ArchiveReader : IArchiveReader
 {
-    public ArchiveReader(ILogger<ArchiveReader> logger, IPostMapper mapper)
+    public ArchiveReader(ILogger<ArchiveReader> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
     }
 
     public async IAsyncEnumerable<Post> ReadPostsAsync(
         string arhiveFilePath,
+        bool skipContent,
         [EnumeratorCancellation] CancellationToken ct
         )
     {
@@ -31,7 +31,7 @@ public class ArchiveReader : IArchiveReader
         {
             ct.ThrowIfCancellationRequested();
 
-            var post = await GetPostAsync(reader).ConfigureAwait(false);
+            var post = await GetPostAsync(reader, skipContent).ConfigureAwait(false);
 
             if (post is null)
                 yield break;
@@ -48,7 +48,7 @@ public class ArchiveReader : IArchiveReader
 
     #region Private fields & methods
 
-    private async Task<Post?> GetPostAsync(XmlReader reader)
+    private static async Task<Post?> GetPostAsync(XmlReader reader, bool skipContent)
     {
         while (await reader.ReadAsync().ConfigureAwait(false))
         {
@@ -56,7 +56,7 @@ public class ArchiveReader : IArchiveReader
             {
                 try
                 {
-                    return _mapper.Map(element);
+                    return MapToPost(element, skipContent);
                 }
                 catch (Exception)
                 {
@@ -69,8 +69,52 @@ public class ArchiveReader : IArchiveReader
         return null;
     }
 
+    private static Post MapToPost(XElement el, bool skipContent)
+    {
+        ArgumentNullException.ThrowIfNull(el);
+
+        var id = (int)GetRequiredAttr(el, "id");
+        var created = DateTime.SpecifyKind(DateTime.ParseExact(GetRequiredAttr(el, "registred_at").Value, "yyyy.MM.d H:m:s", null), DateTimeKind.Utc);
+        var size = (long)GetRequiredAttr(el, "size");
+
+        var title = GetRequiredElement(el, "title").Value;
+
+        var torrent = GetRequiredElement(el, "torrent");
+        var hash = GetRequiredAttr(torrent, "hash").Value;
+        var trackerId = (int)GetRequiredAttr(torrent, "tracker_id");
+
+        var forum = GetRequiredElement(el, "forum");
+        var forumName = forum.Value;
+        var forumId = (int)GetRequiredAttr(forum, "id");
+
+        var content = skipContent ? "" : GetRequiredElement(el, "content").Value;
+
+        //var dir = el.Element("dir");
+
+        return new Post
+        {
+            Id = id,
+            Created = created,
+            Size = size,
+
+            Title = title,
+            Content = content,
+
+            Hash = hash,
+            TrackerId = trackerId,
+
+            ForumId = forumId,
+            ForumName = forumName
+        };
+    }
+
+    private static XElement GetRequiredElement(XElement el, XName name) =>
+        el.Element(name) ?? throw new InvalidDataException($"Missing required element '{name}' on element '{el.Name}'. Element XML: {el}");
+
+    private static XAttribute GetRequiredAttr(XElement el, XName name) =>
+        el.Attribute(name) ?? throw new InvalidDataException($"Missing required attribute '{name}' on element '{el.Name}'. Element XML: {el}");
+
     private readonly ILogger<ArchiveReader> _logger;
-    private readonly IPostMapper _mapper;
 
     #endregion
 }
