@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "XZLibsTest": {
-      "commandName": "Project",
-      "commandLineArgs": "E:\\Temp\\rutracker-20230128-orig-wls.xml.xz"
-    }
-  }
-}
