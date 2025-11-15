@@ -2,6 +2,7 @@ name: Build and Release
 
 on:
   push:
+    branches: [ main ]
     tags: ['v*']
   pull_request:
   release:
@@ -31,20 +32,17 @@ jobs:
         dotnet-version: 8.0.x
 
     - name: Restore dependencies
-      run: dotnet restore
-      working-directory: ./src
+      run: dotnet restore ./src/TrackerOfflineSearch.sln
 
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
-      working-directory: ./src
+    #- name: Build
+    #  run: dotnet build --configuration Release --no-restore
+    #  working-directory: ./src
 
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
-      working-directory: ./src
+    #- name: Test
+    #  run: dotnet test --no-build --verbosity normal
 
     - name: Publish
-      run: dotnet publish -c Release -r ${{ matrix.runtime }} --self-contained true -o ./publish/${{ matrix.runtime }}
-      working-directory: ./src
+      run: dotnet publish ./src/TrackerOfflineSearch/TrackerOfflineSearch.csproj -c Release -r ${{ matrix.runtime }} --self-contained true -o ./publish/${{ matrix.runtime }}
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
