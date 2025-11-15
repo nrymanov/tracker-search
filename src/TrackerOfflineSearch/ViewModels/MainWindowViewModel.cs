@@ -8,7 +8,11 @@ public class MainWindowViewModel : ActivatableViewModel
 {
     #region Constructor
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "MA0051:Method is too long", Justification = "<Pending>")]
+    [SuppressMessage("Design", "MA0051:Method is too long", Justification = """
+        The constructor contains complex setup of reactive data streams (Rx.NET) for managing import progress state.
+        Splitting into methods would reduce readability and understanding of data flow.
+        """
+        )]
     public MainWindowViewModel(
         ILogger<MainWindowViewModel> logger,
         IIndexService indexService,
@@ -189,6 +193,14 @@ public class MainWindowViewModel : ActivatableViewModel
 
             var allForums = _indexService.GetForums().Concat([Forum.AllForums]);
 
+            //
+            // _forumCache используется для построения дерева форумов.
+            // Для этого используется оператор TransformToTree в котором есть ошибка,
+            // проявляющаяся когда одновременно удаляются, добавляются и изменяются элементы.
+            // Как временное решение можно каждый раз грузить дерево заново.
+            // Форумы читаются ьлдбко при старте и после импорта, т ч больших проблем из-за этого не возникнет.
+            //
+            _forumCache.Clear();
             _forumCache.EditDiff(allForums, (current, previous) => string.Equals(current.Id, previous.Id, StringComparison.Ordinal));
         }, ct);
     }
@@ -209,7 +221,7 @@ public class MainWindowViewModel : ActivatableViewModel
 
                 _logger.LogDebug("Search end {query}", query);
             }
-            catch (TaskCanceledException)
+            catch (OperationCanceledException)
             {
                 // Ignore
                 _logger.LogDebug("Search cancelled {query}", query);

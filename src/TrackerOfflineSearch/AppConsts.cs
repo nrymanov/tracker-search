@@ -3,12 +3,6 @@ using Lucene.Net.Util;
 
 namespace TrackerOfflineSearch;
 
-//
-// Get from options:
-// - index path
-// - max buffer size
-//
-
 public static class AppConsts
 {
     public const LuceneVersion SearchEngineVersion = LuceneVersion.LUCENE_48;
@@ -16,6 +10,8 @@ public static class AppConsts
     public const DateResolution DefaultDateResolution = DateResolution.DAY;
 
     public const string ApplicationName = "TrackerOfflineSearch";
+
+    public const string LogsDir = "Logs";
 
     public const string IndexDir = "Index";
 

@@ -20,10 +20,25 @@ internal sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
-        var serviceProvider = ConfigureServices();
-        BuildAvaloniaApp()
-            .AfterSetup(_ => App.Services = serviceProvider)
-            .StartWithClassicDesktopLifetime(args);
+        CreateLogger();
+        var logger = Log.ForContext<Program>();
+
+        try
+        {
+            var serviceProvider = ConfigureServices();
+
+            BuildAvaloniaApp()
+                .AfterSetup(_ => App.Services = serviceProvider)
+                .StartWithClassicDesktopLifetime(args);
+        }
+        catch (Exception err)
+        {
+            logger.Fatal(err, "Application terminated unexpectedly");
+        }
+        finally
+        {
+            Log.CloseAndFlush();
+        }
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
@@ -46,15 +61,31 @@ internal sealed class Program
             .AddJsonFile("settings.json", optional: true)
             .Build();
 
-    private static Serilog.ILogger RegisterLogger(IConfiguration configuration, IServiceCollection services)
+    private static void CreateLogger()
     {
+        var logPath = Path.Combine(
+            GetApplicationPath(AppConsts.LogsDir),
+            "log-.txt"
+            );
+
         Log.Logger = new LoggerConfiguration()
-            .ReadFrom.Configuration(configuration)
+#if DEBUG
+            .MinimumLevel.Debug()
+#else
+            .MinimumLevel.Warning()
+#endif
+            .MinimumLevel.Override("Avalonia", Serilog.Events.LogEventLevel.Warning)
+            .MinimumLevel.Override("ReactiveUI", Serilog.Events.LogEventLevel.Warning)
+            .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
+            .MinimumLevel.Override("System", Serilog.Events.LogEventLevel.Warning)
+            .WriteTo.Debug()
+            .WriteTo.File(
+                path: logPath,
+                rollingInterval: RollingInterval.Day,
+                retainedFileCountLimit: 7,
+                outputTemplate: "{Timestamp:u} {Level:u5} {SourceContext} {Message:lj}{NewLine}{Exception}"
+            )
             .CreateLogger();
-
-        services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: true));
-
-        return Log.ForContext<App>();
     }
 
     private static ServiceProvider ConfigureServices()
@@ -67,6 +98,9 @@ internal sealed class Program
             .AddSingleton<IConfiguration>(sp => sp.GetRequiredService<IConfigurationRoot>());
 
         services
+            .AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: true));
+
+        services
             .AddOptions<ApplicationsOptions>()
             .Bind(configuration.GetSection(nameof(ApplicationsOptions)))
             .PostConfigure(options =>
@@ -76,7 +110,7 @@ internal sealed class Program
                 //
                 if (string.IsNullOrEmpty(options.IndexPath))
                 {
-                    options.IndexPath = GetDefaultIndexPath();
+                    options.IndexPath = GetApplicationPath(AppConsts.IndexDir);
                 }
 
                 //
@@ -87,38 +121,30 @@ internal sealed class Program
                     options.RAMBufferSizeMB = AppConsts.RAMBufferSizeMB;
                 }
             })
-            .ValidateOnStart()
-            ;
-
-        var logger = RegisterLogger(configuration, services);
-
-        logger.Verbose("ConfigureServices - begin");
+            .ValidateOnStart();
 
         services
             .AddSingleton<IArchiveReader, ArchiveReader>()
             .AddSingleton<IBBTextConverter, BBTextConverter>()
-            .AddSingleton<IIndexService, LuceneIndexService>()
-            ;
+            .AddSingleton<IIndexService, LuceneIndexService>();
 
         services
             .AddSingleton<MainWindowViewModel>()
             .AddTransient<AboutViewModel>()
-            .AddTransient<ImportWizardViewModel>()
-            ;
+            .AddTransient<ImportWizardViewModel>();
 
         services
-            .AddSingleton<MainWindow>()
-            ;
+            .AddSingleton<MainWindow>();
 
         return services.BuildServiceProvider();
     }
 
-    private static string GetDefaultIndexPath()
+    private static string GetApplicationPath(string directoryName)
     {
         return Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             typeof(Program).Assembly.GetName().Name ?? AppConsts.ApplicationName,
-            AppConsts.IndexDir
+            directoryName
             );
     }
 }
