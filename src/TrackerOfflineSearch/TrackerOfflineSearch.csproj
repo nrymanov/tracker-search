@@ -1,40 +1,65 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+		<Platforms>x64</Platforms>
+	</PropertyGroup>
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net6.0-windows</TargetFramework>
-    <Nullable>annotations</Nullable>
-    <UseWPF>true</UseWPF>
-  </PropertyGroup>
+	<ItemGroup>
+		<AvaloniaResource Include="Assets\**" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Lucene.Net.QueryParser" Version="4.8.0-beta00016" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="7.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="7.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="7.0.0" />
-    <PackageReference Include="Prism.Unity" Version="8.1.97" />
-    <PackageReference Include="ReactiveUI.WPF" Version="18.4.1" />
-    <PackageReference Include="System.Threading.Tasks.Dataflow" Version="7.0.0" />
-    <PackageReference Include="Unity.Microsoft.DependencyInjection" Version="5.11.5" />
-    <PackageReference Include="XZ.NET-netstandard" Version="2.0.0.2" />
-  </ItemGroup>
+	<ItemGroup>
+	  <None Remove="Services\Implementation\PostTemplate.html" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Update="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+	  <EmbeddedResource Include="Services\Implementation\PostTemplate.html" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <EditorConfigFiles Remove="D:\Projects\tracker-search\src\TrackerOfflineSearch\.editorconfig" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Avalonia" Version="11.3.8" />
+		<PackageReference Include="Avalonia.Desktop" Version="11.3.8" />
+		<PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.8" />
+		<PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.8" />
+		<PackageReference Include="Avalonia.ReactiveUI" Version="11.3.8" />
+		<PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.8" />
+		<PackageReference Include="Avalonia.Svg.Skia" Version="11.3.0" />
+		<PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.1.1">
+			<IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+			<PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+		</PackageReference>				
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.10" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.10" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.10" />
+		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.10" />
+		<PackageReference Include="Serilog" Version="4.3.0" />
+		<PackageReference Include="Serilog.Extensions.Logging" Version="9.0.2" />
+		<PackageReference Include="Serilog.Settings.Configuration" Version="9.0.0" />
+		<PackageReference Include="Serilog.Sinks.Debug" Version="3.0.0" />
+		<PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+		<PackageReference Include="System.Reactive" Version="6.1.0" />
+		<PackageReference Include="WebViewControl-Avalonia" Version="3.120.10" />
+		<PackageReference Include="Lucene.Net.QueryParser" Version="4.8.0-beta00017" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.10" />
+		<PackageReference Include="Microsoft.Extensions.ObjectPool" Version="9.0.10" />
+		<PackageReference Include="SharpCompress" Version="0.41.0" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="Services\Implementation\PostTemplate.html" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Meziantou.Analyzer" Version="2.0.253">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\TrackerOfflineSearch.Domain\TrackerOfflineSearch.Domain.csproj" />
-  </ItemGroup>
-
+	<ItemGroup>
+		<None Update="settings.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 </Project>

@@ -1,4 +1,4 @@
-﻿namespace TrackerOfflineSearch.Services;
+namespace TrackerOfflineSearch.Services;
 
 public interface IBBTextConverter
 {

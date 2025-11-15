@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:TrackerOfflineSearch.Dialogs.Import"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="TrackerOfflineSearch.Dialogs.Import.ErrorView"
+             x:DataType="vm:ErrorViewModel"
+             >
+
+  <Grid RowDefinitions="Auto, *, Auto">
+    <!--Header-->
+    <Border Grid.Row="0"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+            BorderThickness="0,0,0,1"
+            BorderBrush="{DynamicResource SystemControlTransientBorderBrush}"
+            Padding="15"
+            >
+      <TextBlock Classes="wizard-page-title"
+                 HorizontalAlignment="Center"
+                 Text="Ошибка импорта документов"
+                 />
+    </Border>
+
+    <!--Content-->
+    <Grid Grid.Row="1"
+          RowDefinitions="Auto, *"
+          ColumnSpacing="5" RowSpacing="10"
+          Margin="40" 
+          >
+
+      <TextBlock Grid.Row="0" Text="Во время импорта документов произошла ошибка" FontWeight="SemiBold"/>
+
+      <SelectableTextBlock Grid.Row="1"
+                           Text="{Binding ErrorMessage}"
+                           TextWrapping="Wrap"/>
+    </Grid>
+
+    <!--Buttons-->
+    <Border Grid.Row="2"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+            BorderThickness="0,1,0,0"
+            BorderBrush="{DynamicResource SystemControlTransientBorderBrush}"
+            Padding="5"
+            >
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                  Spacing="5"
+                  Classes="dlg-footer">
+        <Button Content="Закрыть"
+                IsDefault="True" IsCancel="True"
+                Command="{Binding CloseCommand}"
+                />
+      </StackPanel>
+    </Border>
+  </Grid>
+
+</UserControl>

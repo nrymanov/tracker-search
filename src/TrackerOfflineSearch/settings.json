@@ -1,0 +1,35 @@
+{
+  "ApplicationsOptions": {
+    //"IndexPath": "E:\\Temp\\Index",
+    //"RAMBufferSizeMB": 1024
+  },
+
+  // Should be removed in the final version
+  "Serilog": {
+    "Using": [ "Serilog.Sinks.Debug", "Serilog.Sinks.File" ],
+    "MinimumLevel": {
+      "Default": "Verbose",
+      "Override": {
+        "Avalonia": "Warning",
+        "Grpc.Net.Client": "Warning",
+        "ReactiveUI": "Warning",
+        "Microsoft": "Warning",
+        "System": "Warning"
+      }
+    },
+    "WriteTo": [
+      {
+        "Name": "Debug"
+      },
+      {
+        "Name": "File",
+        "Args": {
+          "path": "%LOCALAPPDATA%/TrackerOfflineSearch/logs/log-.txt",
+          "rollingInterval": "Day",
+          "retainedFileCountLimit": 7,
+          "outputTemplate": "{Timestamp:u} {Level:u5} {SourceContext} {Message:lj}{NewLine}{Exception}"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,41 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        MinWidth="400" MinHeight="170"
+        Width="480" Height="170"
+        x:Class="TrackerOfflineSearch.Dialogs.ConfirmCancel.ConfirmCancelDialog"
+        Title="Отмена импорта"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        CanMinimize="False"        
+        >
+  <Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, *"
+        ColumnSpacing="5" RowSpacing="5"
+        Margin="5">
+
+    <Svg Grid.Column="0" Grid.Row="0" 
+         Width="96"
+         Margin="10, 10, 10, 10"
+         Path="/Assets/warning.svg"/>
+
+    <TextBlock Grid.Column="1" Grid.Row="0" 
+               Margin="0, 10, 10, 10"
+               Text="Вы действительно хотите прервать импорт?"
+               TextWrapping="Wrap"
+               VerticalAlignment="Center"/>
+
+    <StackPanel Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2" 
+                Spacing="5"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                >
+      <Button Content="Прервать" IsDefault="True" Classes="accent"
+              Click="ConfirmClicked"/>
+      <Button Content="Отмена" 
+              IsCancel="True"
+              Click="CancelClicked"/>
+    </StackPanel>
+  </Grid>
+</Window>
