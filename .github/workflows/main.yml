@@ -32,7 +32,7 @@ jobs:
         dotnet test ./src/TrackerOfflineSearch.sln \
           --configuration Release \
           --verbosity normal \
-          --logger "trx;LogFileName=test-results.trx"
+          --logger "trx;LogFileName=test-results.trx" \
           --collect:"XPlat Code Coverage" \
           -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura,opencover
 
