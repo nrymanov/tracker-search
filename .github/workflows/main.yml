@@ -34,7 +34,7 @@ jobs:
           --verbosity normal \
           --logger "trx;LogFileName=test-results.trx"
           --collect:"XPlat Code Coverage" \
-          --DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura,opencover
+          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura,opencover
 
     - name: Publish Test Results to GitHub
       uses: dorny/test-reporter@v1
