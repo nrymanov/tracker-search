@@ -72,7 +72,7 @@ public sealed class LuceneIndexService : IIndexService, IDisposable
 
     public IEnumerable<Forum> GetForums()
     {
-        var forums = new List<Forum>();
+        var forums = new List<Forum> { Forum.AllForums };
 
         var fields = MultiFields.GetFields(_reader);
         if (fields is null)

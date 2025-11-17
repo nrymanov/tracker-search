@@ -30,9 +30,8 @@ public partial class MainWindow : ReactiveWindow<MainWindowViewModel>
 
         this.WhenActivated(d =>
         {
-
-            this.WhenAnyValue(x => x.ViewModel!.SelectedPostContent)
-                .Subscribe(content => PostContentView.LoadHtml(content))
+            this.WhenAnyValue(x => x.ViewModel!.SelectedPostInfo)
+                .Subscribe(postInfo => PostContentView.LoadHtml(postInfo?.Content ?? ""))
                 .DisposeWith(d);
 
             ViewModel!.Import.RegisterHandler(HandleImportAsync)

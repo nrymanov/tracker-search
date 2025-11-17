@@ -16,23 +16,30 @@ public class MainWindowViewModel : ActivatableViewModel
     public MainWindowViewModel(
         ILogger<MainWindowViewModel> logger,
         IIndexService indexService,
-        IBBTextConverter textConverter
+        IBBTextConverter bbConverter,
+        IBackgroundRunner runner
         )
     {
+        ArgumentNullException.ThrowIfNull(bbConverter);
+
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _indexService = indexService ?? throw new ArgumentNullException(nameof(indexService));
-        _textConverter = textConverter ?? throw new ArgumentNullException(nameof(textConverter));
 
-        _refreshSubject = new BehaviorSubject<bool>(value: true);
+        _refreshSubject = new Subject<Unit>();
 
         #region Команды
 
-        ImportCommand = ReactiveCommand.CreateFromTask<bool>(ExecuteImportAsync);
-        ImportCommand.Subscribe(_refreshSubject);
+        ImportCommand = ReactiveCommand.CreateFromObservable(() => Import.Handle(Unit.Default));
+        ImportCommand
+            .Where(completed => completed)
+            .Select(_ => Unit.Default)
+            .Subscribe(_refreshSubject);
 
-        AboutCommand = ReactiveCommand.CreateFromTask(ShowAboutDialogAsync);
+        AboutCommand = ReactiveCommand.CreateFromObservable(() => About.Handle(Unit.Default));
 
-        SearchCommand = ReactiveCommand.CreateFromTask<PostQuery>(ExecuteSearchAsync);
+        SearchCommand = ReactiveCommand.CreateFromTask<PostQuery>(
+            (query, ct) => runner.RunAsync(() => ExecuteSearch(query, ct), ct)
+        );
 
         #endregion
 
@@ -41,10 +48,13 @@ public class MainWindowViewModel : ActivatableViewModel
         // Создаём список форумов и настраиваем его фильтрацию и сортировку
         //
 
-        _forumCache = new (x => x.Id);
+        _forumCache = new(x => x.Id);
 
         var filter = this.WhenAnyValue(x => x.ForumFilterText, f => f?.Trim() ?? "")
-            .Throttle(TimeSpan.FromMilliseconds(500), RxApp.TaskpoolScheduler)
+            .Throttle(filter => string.IsNullOrEmpty(filter)
+                ? Observable.Empty<long>()
+                : Observable.Timer(TimeSpan.FromMilliseconds(500), RxApp.TaskpoolScheduler)
+            )
             .DistinctUntilChanged()
             .Select(f => BuildForumFilterPredicate(f, _forumCache.Items));
 
@@ -58,13 +68,14 @@ public class MainWindowViewModel : ActivatableViewModel
             .SortAndBind(out _forumTree, forumSortComparer)
             .Subscribe();
 
-        _refreshSubject.Where(success => success)
-            .SelectMany(_ => Observable.FromAsync(LoadForumList))
+        _refreshSubject
+            .SelectMany(_ => Observable.FromAsync(ct => runner.RunAsync(LoadForums, ct)))
             .Subscribe();
 
         #endregion
 
         #region Список документов
+
         //
         // Создадим список постов
         //
@@ -72,44 +83,37 @@ public class MainWindowViewModel : ActivatableViewModel
         _postCache = new(x => x.Id);
 
         var postSortComparer = SortExpressionComparer<Post>.Ascending(f => f.Index);
+
         _postCache.Connect()
             .ObserveOn(RxApp.MainThreadScheduler)
             .SortAndBind(out _posts, postSortComparer)
             .Subscribe();
 
         _selectedPostInfoProperty = this.WhenAnyValue(x => x.SelectedPost)
-            .Throttle(TimeSpan.FromMilliseconds(500), RxApp.TaskpoolScheduler)
+            .Throttle(post => post is null
+                ? Observable.Empty<long>()
+                : Observable.Timer(TimeSpan.FromMilliseconds(500), RxApp.TaskpoolScheduler)
+            )
             .DistinctUntilChanged()
-            .Select(post => post is null ? null : new PostInfoViewModel(post))
+            .Select(post => post is null ? null : new PostInfoViewModel(bbConverter, post))
             .ToProperty(this, x => x.SelectedPostInfo);
-
-        _postContentProperty = this.WhenAnyValue(x => x.SelectedPost)
-            .Throttle(TimeSpan.FromMilliseconds(500), RxApp.TaskpoolScheduler)
-            .DistinctUntilChanged()
-            .Select(post => post is null ? "" : _textConverter.Convert(post.Content))
-            .ToProperty(this, x => x.SelectedPostContent);
 
         #endregion
 
         #region Поиск
+
         //
         // Настраиваем поиск
         //
 
         _currentQueryProperty = this.WhenAnyValue(x => x.SelectedForum, x => x.PostFilterText, (forum, post) => (ForumPath: forum?.Id, PostFilter: post?.Trim()))
-            .Throttle(TimeSpan.FromMilliseconds(500), RxApp.TaskpoolScheduler)
+            .Throttle(args => string.IsNullOrEmpty(args.ForumPath) && string.IsNullOrEmpty(args.PostFilter)
+                ? Observable.Empty<long>()
+                : Observable.Timer(TimeSpan.FromMilliseconds(500), RxApp.TaskpoolScheduler)
+            )
             .DistinctUntilChanged()
             .Select(args => new PostQuery(args.PostFilter, args.PostFilter, args.ForumPath))
-            .ToProperty(this, x => x.Query, new PostQuery());
-
-        Observable.CombineLatest(
-            this.WhenAnyValue(x => x.Query),
-            _refreshSubject.Where(success => success),
-            (q, _) => q
-        )
-            .Select(query => SearchCommand.Execute(query).Catch(Observable.Empty<Unit>()))
-            .Switch()
-            .Subscribe();
+            .ToProperty(this, x => x.Query);
 
         #endregion
 
@@ -117,10 +121,19 @@ public class MainWindowViewModel : ActivatableViewModel
             .Subscribe();
 
         this.WhenActivated(d =>
-            Observable.FromAsync(LoadForumList)
+        {
+            var queryChanges = this.WhenAnyValue(x => x.Query).Skip(1);
+
+            var refreshTrigger = _refreshSubject.Select(_ => Query);
+
+            Observable.Merge(queryChanges, refreshTrigger)
+                .Select(query => SearchCommand.Execute(query).Catch(Observable.Empty<Unit>()))
+                .Switch()
                 .Subscribe()
-                .DisposeWith(d)
-        );
+                .DisposeWith(d);
+
+            _refreshSubject.OnNext(Unit.Default);
+        });
     }
 
     #endregion
@@ -161,8 +174,6 @@ public class MainWindowViewModel : ActivatableViewModel
         set => this.RaiseAndSetIfChanged(ref _selectedPost, value);
     }
 
-    public string SelectedPostContent => _postContentProperty.Value;
-
     public PostInfoViewModel? SelectedPostInfo => _selectedPostInfoProperty.Value;
 
     // Interaction
@@ -185,66 +196,50 @@ public class MainWindowViewModel : ActivatableViewModel
 
     private ReactiveCommand<PostQuery, Unit> SearchCommand { get; }
 
-    private Task LoadForumList(CancellationToken ct)
+    private void LoadForums()
     {
-        return Task.Run(() =>
-        {
-            var total = _indexService.TotalCount;
+        _logger.LogDebug("LoadForums begin");
 
-            var allForums = _indexService.GetForums().Concat([Forum.AllForums]);
+        var allForums = _indexService.GetForums();
 
-            //
-            // _forumCache используется для построения дерева форумов.
-            // Для этого используется оператор TransformToTree в котором есть ошибка,
-            // проявляющаяся когда одновременно удаляются, добавляются и изменяются элементы.
-            // Как временное решение можно каждый раз грузить дерево заново.
-            // Форумы читаются ьлдбко при старте и после импорта, т ч больших проблем из-за этого не возникнет.
-            //
-            _forumCache.Clear();
-            _forumCache.EditDiff(allForums, (current, previous) => string.Equals(current.Id, previous.Id, StringComparison.Ordinal));
-        }, ct);
+        //
+        // _forumCache используется для построения дерева форумов.
+        // Для этого используется оператор TransformToTree в котором есть ошибка,
+        // проявляющаяся когда одновременно удаляются, добавляются и изменяются элементы.
+        // Как временное решение можно каждый раз грузить дерево заново.
+        // Форумы читаются только при старте и после импорта, т ч больших проблем из-за этого не возникнет.
+        //
+        _forumCache.Clear();
+        _forumCache.EditDiff(allForums, (current, previous) => string.Equals(current.Id, previous.Id, StringComparison.Ordinal));
+
+        _logger.LogDebug("LoadForums end");
     }
 
-    private Task ExecuteSearchAsync(PostQuery query, CancellationToken ct)
+    private void ExecuteSearch(PostQuery query, CancellationToken token)
     {
-        return Task.Run(() =>
+        try
         {
-            try
-            {
-                _logger.LogDebug("Search begin {query}", query);
+            _logger.LogDebug("Search begin {query}", query);
 
-                var searchResults = _indexService.Search(query);
+            var searchResults = _indexService.Search(query);
 
-                ct.ThrowIfCancellationRequested();
+            token.ThrowIfCancellationRequested();
 
-                _postCache.EditDiff(searchResults.Items, (current, previous) => current.Id == previous.Id);
+            _postCache.EditDiff(searchResults.Items, (current, previous) => current.Id == previous.Id);
 
-                _logger.LogDebug("Search end {query}", query);
-            }
-            catch (OperationCanceledException)
-            {
-                // Ignore
-                _logger.LogDebug("Search cancelled {query}", query);
-            }
-            catch (Exception err)
-            {
-                // Ignore
-                _logger.LogError(err, "Search error {query}", query);
-            }
-        }, ct);
-    }
-
-    private async Task<bool> ExecuteImportAsync()
-    {
-        var importCompleted = await Import.Handle(Unit.Default);
-        if (importCompleted)
-        {
-            //_indexService.Refresh();
+            _logger.LogDebug("Search end {query}", query);
         }
-        return importCompleted;
+        catch (OperationCanceledException)
+        {
+            // Ignore
+            _logger.LogDebug("Search cancelled {query}", query);
+        }
+        catch (Exception err)
+        {
+            // Ignore
+            _logger.LogError(err, "Search error {query}", query);
+        }
     }
-
-    private async Task ShowAboutDialogAsync() => await About.Handle(Unit.Default);
 
     /// <summary>
     /// Создает фильтр для форумов, который включает форумы, совпадающие с критерием поиска, 
@@ -300,7 +295,6 @@ public class MainWindowViewModel : ActivatableViewModel
 
     private readonly ILogger<MainWindowViewModel> _logger;
     private readonly IIndexService _indexService;
-    private readonly IBBTextConverter _textConverter;
 
     private readonly SourceCache<Forum, string> _forumCache;
     private readonly ReadOnlyObservableCollection<ForumViewModel> _forumTree;
@@ -310,13 +304,12 @@ public class MainWindowViewModel : ActivatableViewModel
     private readonly ReadOnlyObservableCollection<Post> _posts;
     private Post? _selectedPost;
     private readonly ObservableAsPropertyHelper<PostInfoViewModel?> _selectedPostInfoProperty;
-    private readonly ObservableAsPropertyHelper<string> _postContentProperty;
 
     private string _forumFilterText = "";
     private string _postFilterText = "";
     private readonly ObservableAsPropertyHelper<PostQuery> _currentQueryProperty;
 
-    private readonly BehaviorSubject<bool> _refreshSubject;
+    private readonly Subject<Unit> _refreshSubject;
 
     #endregion
 }

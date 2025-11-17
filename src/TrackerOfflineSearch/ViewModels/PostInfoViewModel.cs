@@ -1,12 +1,14 @@
+using TrackerOfflineSearch.Services;
 using TrackerOfflineSearch.Services.Models;
 
 namespace TrackerOfflineSearch.ViewModels;
 
 public class PostInfoViewModel : ViewModelBase
 {
-    public PostInfoViewModel(Post post)
-    { 
-        _post = post;
+    public PostInfoViewModel(IBBTextConverter bbConverter, Post post)
+    {
+        ArgumentNullException.ThrowIfNull(bbConverter);
+        ArgumentNullException.ThrowIfNull(post);
 
         Title = post.Title;
         ForumName = post.ForumName;
@@ -24,6 +26,8 @@ public class PostInfoViewModel : ViewModelBase
         }
 
         MagnetLink = post.MagnetUrl;
+
+        Content = bbConverter.Convert(post.Content);
     }
 
     public string Title { get; }
@@ -31,7 +35,7 @@ public class PostInfoViewModel : ViewModelBase
     public string ForumName { get; init; } = string.Empty;
 
     public long Size { get; init; }
-    
+
     public DateTime Created { get; init; }
 
     public Uri? PostUri { get; }
@@ -40,5 +44,5 @@ public class PostInfoViewModel : ViewModelBase
 
     public string MagnetLink { get; }
 
-    private readonly Post _post;
+    public string Content { get; }
 }

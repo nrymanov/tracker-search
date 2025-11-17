@@ -124,6 +124,7 @@ internal sealed class Program
             .ValidateOnStart();
 
         services
+            .AddSingleton<IBackgroundRunner, TaskBackgroundRunner>()
             .AddSingleton<IArchiveReader, ArchiveReader>()
             .AddSingleton<IBBTextConverter, BBTextConverter>()
             .AddSingleton<IIndexService, LuceneIndexService>();
