@@ -20,7 +20,7 @@ jobs:
           - os: macos-latest
             runtime: osx-x64
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
@@ -34,18 +34,42 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore ./src/TrackerOfflineSearch.sln
 
-    #- name: Build
-    #  run: dotnet build --configuration Release --no-restore
-    #  working-directory: ./src
+    - name: Build
+      run: dotnet build ./src/TrackerOfflineSearch.sln --configuration Release --no-restore
 
-    #- name: Test
-    #  run: dotnet test --no-build --verbosity normal
+    - name: Test
+      run: dotnet test ./src/TrackerOfflineSearch.sln --configuration Release --verbosity normal --logger "trx;LogFileName=test-results.trx"
+      
+    - name: Publish test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: "**/TestResults/*.trx"
 
-    - name: Publish
-      run: dotnet publish ./src/TrackerOfflineSearch/TrackerOfflineSearch.csproj -c Release -r ${{ matrix.runtime }} --self-contained true -o ./publish/${{ matrix.runtime }}
+    - name: Publish Linux
+      run: dotnet publish ./src/TrackerOfflineSearch/TrackerOfflineSearch.csproj -c Release -r linux-x64 --self-contained true -o ./publish/linux-x64
+
+    - name: Upload Linux artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-x64-build
+        path: publish/linux-x64/
+
+    - name: Publish Windows
+      run: dotnet publish ./src/TrackerOfflineSearch/TrackerOfflineSearch.csproj -c Release -r win-x64 --self-contained true -o ./publish/win-x64
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.runtime }}-build
-        path: publish/${{ matrix.runtime }}/
+        name: win-x64-build
+        path: publish/win-x64/
+
+    - name: Publish OSX
+      run: dotnet publish ./src/TrackerOfflineSearch/TrackerOfflineSearch.csproj -c Release -r osx-x64 --self-contained true -o ./publish/osx-x64
+
+    - name: Upload OSX artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: osx-x64-build
+        path: publish/osx-x64/
