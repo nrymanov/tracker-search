@@ -10,5 +10,5 @@ public interface IIndexService
 
     SearchResult Search(PostQuery postQuery, int limit = 100);
 
-    IIndexWriterSession OpenWriterSession();
+    void Refresh();
 }

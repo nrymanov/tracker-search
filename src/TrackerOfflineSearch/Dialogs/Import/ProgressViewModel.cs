@@ -16,12 +16,14 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
     public ProgressViewModel(
         IScreen screen,
         IArchiveReader archiveReader,
-        IIndexService indexService
+        IIndexService indexService,
+        Func<IIndexWriterSession> writerSessionFactory
         )
     {
         HostScreen = screen ?? throw new ArgumentNullException(nameof(screen));
         _archiveReader = archiveReader ?? throw new ArgumentNullException(nameof(archiveReader));
         _indexService = indexService ?? throw new ArgumentNullException(nameof(indexService));
+        _writerSessionFactory = writerSessionFactory ?? throw new ArgumentNullException(nameof(writerSessionFactory));
 
         ImportCommand = ReactiveCommand.CreateFromTask<ImportParameters, ImportResult>(ImportAsync);
         CancelCommand = ReactiveCommand.Create(() => { });
@@ -171,7 +173,8 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
     {
         try
         {
-            using var session = _indexService.OpenWriterSession();
+            using var session = _writerSessionFactory();
+            //using var session = _indexService.OpenWriterSession();
 
             var sw = Stopwatch.StartNew();
 
@@ -186,6 +189,8 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
             await session.CommitAsync(ct).ConfigureAwait(false);
 
             _progressMessageSubject.OnNext("Импорт завершен");
+
+            _indexService.Refresh();
 
             return new ImportCompletedResult(parameters, documentCount, sw.Elapsed);
         }
@@ -220,6 +225,7 @@ public class ProgressViewModel : ActivatableViewModel, IWizardPageViewModel
 
     private readonly IArchiveReader _archiveReader;
     private readonly IIndexService _indexService;
+    private readonly Func<IIndexWriterSession> _writerSessionFactory;
     private readonly ObservableAsPropertyHelper<string> _messageProperty;
     private readonly ObservableAsPropertyHelper<TimeSpan> _elapsedProperty;
     private readonly Subject<string> _progressMessageSubject = new();

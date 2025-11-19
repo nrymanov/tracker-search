@@ -106,13 +106,14 @@ public class MainWindowViewModel : ActivatableViewModel
         // Настраиваем поиск
         //
 
-        _currentQueryProperty = this.WhenAnyValue(x => x.SelectedForum, x => x.PostFilterText, (forum, post) => (ForumPath: forum?.Id, PostFilter: post?.Trim()))
-            .Throttle(args => string.IsNullOrEmpty(args.ForumPath) && string.IsNullOrEmpty(args.PostFilter)
+        _currentQueryProperty = this.WhenAnyValue(x => x.SelectedForum, x => x.PostFilterText, (forum, post) => (Forum: forum?.Item, PostFilter: post?.Trim()))
+            .Throttle(args =>
+                (args.Forum?.IsRoot ?? true) && string.IsNullOrEmpty(args.PostFilter)
                 ? Observable.Empty<long>()
                 : Observable.Timer(TimeSpan.FromMilliseconds(500), RxApp.TaskpoolScheduler)
             )
             .DistinctUntilChanged()
-            .Select(args => new PostQuery(args.PostFilter, args.PostFilter, args.ForumPath))
+            .Select(args => new PostQuery(args.PostFilter, args.PostFilter, args.Forum))
             .ToProperty(this, x => x.Query);
 
         #endregion

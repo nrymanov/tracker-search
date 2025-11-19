@@ -2,12 +2,11 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Xml;
 using System.Xml.Linq;
-using Microsoft.Extensions.Options;
 using TrackerOfflineSearch.Services.Models;
 
 namespace TrackerOfflineSearch.Services.Implementation;
 
-public class ArchiveReader(ILogger<ArchiveReader> logger) : IArchiveReader
+public class ArchiveReader(ILogger<ArchiveReader> logger, IXmlStreamFactory streamFactory) : IArchiveReader
 {
     #region IArchiveReader
 
@@ -17,7 +16,7 @@ public class ArchiveReader(ILogger<ArchiveReader> logger) : IArchiveReader
         [EnumeratorCancellation] CancellationToken ct
         )
     {
-        var stream = new XZStreamWrapper(arhiveFilePath);
+        var stream = streamFactory.GetStream(arhiveFilePath);
         await using (stream.ConfigureAwait(false))
         {
             using var reader = XmlReader.Create(stream, new XmlReaderSettings { Async = true });
@@ -35,6 +34,11 @@ public class ArchiveReader(ILogger<ArchiveReader> logger) : IArchiveReader
                 if (post is null)
                 {
                     yield break;
+                }
+
+                if (post.IsNull)
+                {
+                    continue;
                 }
 
                 yield return post;

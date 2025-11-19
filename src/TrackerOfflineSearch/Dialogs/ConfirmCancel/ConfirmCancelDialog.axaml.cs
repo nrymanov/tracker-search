@@ -2,6 +2,7 @@ using Avalonia.Controls;
 
 namespace TrackerOfflineSearch.Dialogs.ConfirmCancel;
 
+[ExcludeFromCodeCoverage]
 public partial class ConfirmCancelDialog : Window
 {
     public ConfirmCancelDialog()

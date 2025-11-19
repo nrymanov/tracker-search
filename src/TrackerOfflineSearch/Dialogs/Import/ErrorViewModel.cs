@@ -34,16 +34,14 @@ public class ErrorViewModel : ActivatableViewModel, IWizardPageViewModel
 
     public ErrorViewModel WithParameters(ImportFailedResult importResult)
     {
+        ArgumentNullException.ThrowIfNull(importResult);
+
         ErrorMessage = importResult.Error.Message;
 
         return this;
     }
 
     public string ErrorMessage { get; private set; } = "";
-
-    #endregion
-
-    #region Private
 
     #endregion
 }

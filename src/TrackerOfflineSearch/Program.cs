@@ -12,6 +12,7 @@ using TrackerOfflineSearch.Views;
 
 namespace TrackerOfflineSearch;
 
+[ExcludeFromCodeCoverage]
 internal sealed class Program
 {
     // Initialization code. Don't use any Avalonia, third-party APIs or any
@@ -125,9 +126,20 @@ internal sealed class Program
 
         services
             .AddSingleton<IBackgroundRunner, TaskBackgroundRunner>()
+            .AddSingleton<IXmlStreamFactory, XZXmlStreamFactory>()
             .AddSingleton<IArchiveReader, ArchiveReader>()
             .AddSingleton<IBBTextConverter, BBTextConverter>()
-            .AddSingleton<IIndexService, LuceneIndexService>();
+            ;
+
+        services
+            .AddSingleton<Lucene.Net.Analysis.Analyzer>(
+                _ => new Lucene.Net.Analysis.Ru.RussianAnalyzer(AppConsts.SearchEngineVersion)
+            )
+            .AddSingleton<Lucene.Net.Store.Directory>(DirectoryFactory.GetDirectory)
+            .AddSingleton<IIndexService, LuceneIndexService>()
+            .AddTransient<IIndexWriterSession, IndexWriterSession>()
+            .AddSingleton<Func<IIndexWriterSession>>(sp => sp.GetRequiredService<IIndexWriterSession>)
+            ;
 
         services
             .AddSingleton<MainWindowViewModel>()

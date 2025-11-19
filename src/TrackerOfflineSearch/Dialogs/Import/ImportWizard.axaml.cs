@@ -2,6 +2,7 @@ using Avalonia.Controls;
 
 namespace TrackerOfflineSearch.Dialogs.Import;
 
+[ExcludeFromCodeCoverage]
 public partial class ImportWizard : ReactiveWindow<ImportWizardViewModel>
 {
     public ImportWizard()

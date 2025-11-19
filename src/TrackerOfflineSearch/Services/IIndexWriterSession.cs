@@ -11,4 +11,6 @@ public interface IIndexWriterSession : IDisposable
     Task OptimizeAsync(IndexOptimizationStrategy strategy, CancellationToken cancellation);
 
     Task CommitAsync(CancellationToken cancellation);
+
+    bool HasChanges { get; }
 }

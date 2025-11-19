@@ -8,9 +8,7 @@ public class ForumViewModel : ReactiveObject
     {
         _node = node;
 
-        Name = _node.Item.Name;
-        Id = _node.Item.Id;
-        Order = _node.Item.Order;
+        Item = _node.Item;
 
         _node.Children.Connect()
             .Transform(y => new ForumViewModel(y, comparer))
@@ -19,11 +17,13 @@ public class ForumViewModel : ReactiveObject
             .Subscribe();
     }
 
-    public string Name { get; }
+    public Forum Item { get; }
 
-    public string Id { get; }
+    public string Name => Item.Name;
 
-    public int Order { get; }
+    public string Id => Item.Id;
+
+    public int Order => Item.Order;
 
     public bool IsExpanded
     {

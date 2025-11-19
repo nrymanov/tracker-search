@@ -8,10 +8,13 @@ public record Forum
 
     private Forum()
     {
-        Id = Separator;
-        ParentId = "";
-        Name = "Все форумы";
+        Id = "";
+        ParentId = Separator;
         Order = 0;
+        Name = "Все форумы";
+        Path = "";
+        SubForumPath = "";
+        IsRoot = true;
     }
 
     public Forum(string fullPath)
@@ -31,17 +34,25 @@ public record Forum
             Name = fullPath;
         }
         Order = 1;
+        Path = $"{Id}";
+        SubForumPath = $"{Id}{Separator}";
     }
 
     public string Id { get; }
 
     public string ParentId { get; }
 
-    public string Name { get; }
-
     public int Order { get; }
 
+    public string Name { get; }
+
+    public string Path { get; }
+
+    public string SubForumPath { get; }
+
+    public bool IsRoot { get; }
+
     public bool IsChildOf(Forum forum) =>
-        Id.StartsWith($"{forum.Id}{Separator}", StringComparison.Ordinal);
+        Id.StartsWith(forum.SubForumPath, StringComparison.Ordinal);
 
 }

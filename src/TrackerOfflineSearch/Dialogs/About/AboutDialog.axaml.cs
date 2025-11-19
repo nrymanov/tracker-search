@@ -1,5 +1,6 @@
 namespace TrackerOfflineSearch.Dialogs.About;
 
+[ExcludeFromCodeCoverage]
 public partial class AboutDialog : ReactiveWindow<AboutViewModel>
 {
     public AboutDialog()

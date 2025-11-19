@@ -7,14 +7,15 @@ public class ImportWizardViewModel : ActivatableViewModel, IScreen
 {
     public ImportWizardViewModel(
         IArchiveReader archiveReader,
-        IIndexService indexService
+        IIndexService indexService,
+        Func<IIndexWriterSession> writerSessionFactory
         )
     {
         CloseCommand = ReactiveCommand.Create<bool, bool>(result => result);
         CancelCommand = ReactiveCommand.CreateFromTask(ConfirmCancelAsync);
 
         _paramsPage = new ParametersViewModel(this);
-        _progressPage = new ProgressViewModel(this, archiveReader, indexService);
+        _progressPage = new ProgressViewModel(this, archiveReader, indexService, writerSessionFactory);
         _resultPage = new ResultViewModel(this);
         _errorPage = new ErrorViewModel(this);
 

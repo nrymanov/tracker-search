@@ -6,6 +6,7 @@ using TrackerOfflineSearch.Views;
 
 namespace TrackerOfflineSearch;
 
+[ExcludeFromCodeCoverage]
 public partial class App : Application
 {
     public static IServiceProvider Services { get; set; } = null!;

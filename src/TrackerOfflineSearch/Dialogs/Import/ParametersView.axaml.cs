@@ -3,6 +3,7 @@ using Avalonia.Platform.Storage;
 
 namespace TrackerOfflineSearch.Dialogs.Import;
 
+[ExcludeFromCodeCoverage]
 public partial class ParametersView : ReactiveUserControl<ParametersViewModel>
 {
     public ParametersView()

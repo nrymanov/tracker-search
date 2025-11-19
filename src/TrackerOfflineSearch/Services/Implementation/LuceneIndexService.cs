@@ -1,6 +1,5 @@
 using System.Globalization;
 using Lucene.Net.Analysis;
-using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Documents;
 using Lucene.Net.Documents.Extensions;
 using Lucene.Net.Index;
@@ -8,8 +7,6 @@ using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
 using Lucene.Net.Util;
-using Microsoft.Extensions.ObjectPool;
-using Microsoft.Extensions.Options;
 using TrackerOfflineSearch.Services.Models;
 
 namespace TrackerOfflineSearch.Services.Implementation;
@@ -20,36 +17,19 @@ public sealed class LuceneIndexService : IIndexService, IDisposable
 
     public LuceneIndexService(
         ILogger<LuceneIndexService> logger,
-        IOptions<ApplicationsOptions> options
+        Analyzer analyzer,
+        Directory directory
         )
     {
+        ArgumentNullException.ThrowIfNull(analyzer);
+        ArgumentNullException.ThrowIfNull(directory);
+
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _options = options ?? throw new ArgumentNullException(nameof(options));
 
-        var indexPath = _options.Value.IndexPath;
+        _reader = DirectoryReader.Open(directory);
 
-        if (!System.IO.Directory.Exists(indexPath))
-        {
-            System.IO.Directory.CreateDirectory(indexPath);
-        }
-
-        _analyzer = new StandardAnalyzer(AppConsts.SearchEngineVersion);
-        _directory = FSDirectory.Open(indexPath);
-
-        if (!DirectoryReader.IndexExists(_directory))
-        {
-            var config = new IndexWriterConfig(AppConsts.SearchEngineVersion, _analyzer)
-            {
-                OpenMode = OpenMode.CREATE_OR_APPEND,
-            };
-            using var writer = new IndexWriter(_directory, config);
-            writer.Commit();
-        }
-
-        _reader = DirectoryReader.Open(_directory);
-
-        _titleParser = new QueryParser(AppConsts.SearchEngineVersion, Post.TitleField, _analyzer);
-        _contentParser = new QueryParser(AppConsts.SearchEngineVersion, Post.ContentField, _analyzer);
+        _titleParser = new QueryParser(AppConsts.SearchEngineVersion, Post.TitleField, analyzer);
+        _contentParser = new QueryParser(AppConsts.SearchEngineVersion, Post.ContentField, analyzer);
     }
 
     #endregion
@@ -58,15 +38,12 @@ public sealed class LuceneIndexService : IIndexService, IDisposable
 
     public void Dispose()
     {
-        _reader?.Dispose();
-        //_writer.Dispose();
-        _directory.Dispose();
-        _analyzer.Dispose();
+        _reader.Dispose();
     }
 
     #endregion
 
-    #region IIndexService - search
+    #region IIndexService
 
     public int TotalCount => _reader.NumDocs;
 
@@ -74,19 +51,13 @@ public sealed class LuceneIndexService : IIndexService, IDisposable
     {
         var forums = new List<Forum> { Forum.AllForums };
 
-        var fields = MultiFields.GetFields(_reader);
-        if (fields is null)
-        {
-            return forums;
-        }
-
-        var terms = fields.GetTerms(Post.ForumNameField);
+        var terms = MultiFields.GetTerms(_reader, Post.ForumNameField);
         if (terms is null)
         {
             return forums;
         }
 
-        var iterator = terms.GetEnumerator(reuse: null);
+        var iterator = terms.GetEnumerator();
         if (iterator is null)
         {
             return forums;
@@ -123,95 +94,15 @@ public sealed class LuceneIndexService : IIndexService, IDisposable
         return new SearchResult(posts, topDocs.TotalHits);
     }
 
-    public IIndexWriterSession OpenWriterSession() => new IndexWriterSession(this);
-
-    #endregion
-
-    #region IIndexWriterSession
-
-    private sealed class IndexWriterSession : IIndexWriterSession
+    public void Refresh()
     {
-        public IndexWriterSession(LuceneIndexService indexService)
+        var newReader = DirectoryReader.OpenIfChanged(_reader);
+        if (newReader != null)
         {
-            _indexService = indexService ?? throw new ArgumentNullException(nameof(indexService));
-
-            var config = new IndexWriterConfig(AppConsts.SearchEngineVersion, indexService._analyzer)
-            {
-                OpenMode = OpenMode.CREATE_OR_APPEND,
-                RAMBufferSizeMB = _indexService._options.Value.RAMBufferSizeMB,
-            };
-            _writer = new IndexWriter(indexService._directory, config);
-
-            _pool = ObjectPool.Create<PostDocument>();
+            var oldReader = _reader;
+            _reader = newReader;
+            oldReader.Dispose();
         }
-
-        public void Dispose()
-        {
-            if (_hasChanges)
-            {
-                _writer.Rollback();
-            }
-            _writer.Dispose();
-        }
-
-        public Task ClearAsync(CancellationToken cancellation) =>
-            Task.Run(() =>
-                {
-                    _writer.DeleteAll();
-                    _hasChanges = true;
-                },
-                cancellation
-            );
-
-        public void Add(Post post)
-        {
-            var doc = _pool.Get();
-            try
-            {
-                _writer.AddDocument(doc.UpdateFrom(post));
-                _hasChanges = true;
-            }
-            finally
-            {
-                _pool.Return(doc);
-            }
-        }
-
-        public Task CommitAsync(CancellationToken cancellation) =>
-            Task.Run(() =>
-                {
-                    _writer.Commit();
-                    _hasChanges = false;
-
-                    _indexService.Refresh();
-                },
-                cancellation
-            );
-
-        public Task OptimizeAsync(IndexOptimizationStrategy strategy, CancellationToken cancellation) =>
-            Task.Run(() => OptimizeIndex(strategy), cancellation);
-
-        private void OptimizeIndex(IndexOptimizationStrategy strategy)
-        {
-            var maxSegments = strategy switch
-            {
-                IndexOptimizationStrategy.Minimum => 100,
-                IndexOptimizationStrategy.Low => 20,
-                IndexOptimizationStrategy.Normal => 10,
-                IndexOptimizationStrategy.High => 5,
-                IndexOptimizationStrategy.Maximum => 1,
-                _ => throw new ArgumentException("Unsupported optimization strategy", nameof(strategy)),
-            };
-
-            _writer.ForceMerge(maxSegments);
-            _hasChanges = true;
-        }
-
-        private readonly LuceneIndexService _indexService;
-        private readonly IndexWriter _writer;
-        private readonly ObjectPool<PostDocument> _pool;
-
-        private bool _hasChanges;
     }
 
     #endregion
@@ -258,6 +149,11 @@ public sealed class LuceneIndexService : IIndexService, IDisposable
 
         foreach (var forum in forums)
         {
+            if (forum.IsRoot)
+            {
+                continue;
+            }
+
             var parentId = forum.ParentId;
             while (!string.IsNullOrEmpty(parentId) && !result.ContainsKey(parentId))
             {
@@ -268,17 +164,6 @@ public sealed class LuceneIndexService : IIndexService, IDisposable
         }
 
         return result.Values;
-    }
-
-    private void Refresh()
-    {
-        var newReader = DirectoryReader.OpenIfChanged(_reader);
-        if (newReader != null)
-        {
-            var oldReader = _reader;
-            _reader = newReader;
-            oldReader.Dispose();
-        }
     }
 
     private Query BuildQuery(PostQuery postQuery)
@@ -336,8 +221,8 @@ public sealed class LuceneIndexService : IIndexService, IDisposable
 
         return new BooleanQuery()
         {
-            { new TermQuery(new Term(Post.ForumNameField, postQuery.Forum)), Occur.SHOULD },
-            { new PrefixQuery(new Term(Post.ForumNameField, postQuery.Forum + Forum.Separator)), Occur.SHOULD },
+            { new TermQuery(new Term(Post.ForumNameField, postQuery.Forum!.Path)), Occur.SHOULD },
+            { new PrefixQuery(new Term(Post.ForumNameField, postQuery.Forum.SubForumPath)), Occur.SHOULD },
         };
         //return new PrefixQuery(new Term(Post.ForumNameField, postQuery.Forum));
     }
@@ -372,12 +257,8 @@ public sealed class LuceneIndexService : IIndexService, IDisposable
 
 #pragma warning restore CA1859
 
-    //private readonly string _indexPath;
     private readonly ILogger<LuceneIndexService> _logger;
-    private readonly IOptions<ApplicationsOptions> _options;
 
-    private readonly FSDirectory _directory;
-    private readonly Analyzer _analyzer;
     private DirectoryReader _reader;
 
     private readonly QueryParser _titleParser;
@@ -385,3 +266,4 @@ public sealed class LuceneIndexService : IIndexService, IDisposable
 
     #endregion
 }
+

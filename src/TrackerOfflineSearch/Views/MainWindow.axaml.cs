@@ -5,6 +5,7 @@ using TrackerOfflineSearch.ViewModels;
 
 namespace TrackerOfflineSearch.Views;
 
+[ExcludeFromCodeCoverage]
 public partial class MainWindow : ReactiveWindow<MainWindowViewModel>
 {
     /// <summary>

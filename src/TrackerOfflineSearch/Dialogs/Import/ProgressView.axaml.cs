@@ -3,6 +3,7 @@ using TrackerOfflineSearch.Dialogs.ConfirmCancel;
 
 namespace TrackerOfflineSearch.Dialogs.Import;
 
+[ExcludeFromCodeCoverage]
 public partial class ProgressView : ReactiveUserControl<ProgressViewModel>
 {
     public ProgressView()

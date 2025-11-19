@@ -39,7 +39,8 @@ public class PostQueryTests
     [Fact]
     public void HasForumFilter_ReturnsTrue_WhenForumIsSpecified()
     {
-        var q = new PostQuery(Forum: "123");
+        var forum = new Forum("A - B");
+        var q = new PostQuery(Forum: forum);
         Assert.True(q.HasForumFilter());
     }
 
@@ -51,10 +52,10 @@ public class PostQueryTests
     }
 
     [Fact]
-    public void HasForumFilter_ReturnsFalse_WhenForumEqualsSeparator()
+    public void HasForumFilter_ReturnsFalse_WhenForumIsRoot()
     {
-        var separator = Forum.Separator;
-        var q = new PostQuery(Forum: separator);
+        var forum = Forum.AllForums;
+        var q = new PostQuery(Forum: forum);
 
         Assert.False(q.HasForumFilter());
     }
@@ -112,8 +113,9 @@ public class PostQueryTests
     [InlineData("abc", null, null)]
     [InlineData(null, "content", null)]
     [InlineData(null, null, "forum")]
-    public void IsEmpty_ReturnsFalse_WhenAnyFilterProvided(string? title, string? content, string? forum)
+    public void IsEmpty_ReturnsFalse_WhenAnyFilterProvided(string? title, string? content, string? forumPath)
     {
+        var forum = forumPath is null ? null : new Forum(forumPath);
         var q = new PostQuery(Title: title, Content: content, Forum: forum);
         Assert.False(q.IsEmpty);
     }
