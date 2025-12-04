@@ -1,361 +1,443 @@
+using System.Diagnostics;
 using System.Reactive;
 using DynamicData.Binding;
 using Microsoft.Extensions.Logging;
 using Microsoft.Reactive.Testing;
 using Moq;
 using ReactiveUI;
+using ReactiveUI.Testing;
 using TrackerOfflineSearch.Services;
 using TrackerOfflineSearch.Services.Models;
 using TrackerOfflineSearch.UnitTests.Helpers;
 using TrackerOfflineSearch.ViewModels;
+using Xunit.Abstractions;
 
 namespace TrackerOfflineSearch.UnitTests.ViewModels;
 
 public class MainWindowViewModelTests
 {
+    private readonly ITestOutputHelper _output;
+
     private readonly Mock<ILogger<MainWindowViewModel>> _logger = new();
     private readonly Mock<IIndexService> _indexService = new();
     private readonly Mock<IBBTextConverter> _bbConverter = new();
-    private readonly IBackgroundRunner _runner;
-    private readonly TestScheduler _scheduler = new();
-    private readonly MainWindowViewModel _vm;
+    //private readonly IBackgroundRunner _runner;
+    //private readonly TestScheduler _scheduler = new();
+    //private readonly MainWindowViewModel _vm;
 
-    public MainWindowViewModelTests()
+    public MainWindowViewModelTests(ITestOutputHelper output)
     {
-        RxApp.MainThreadScheduler = _scheduler;
-        RxApp.TaskpoolScheduler = _scheduler;
+        _output = output;
 
-        _runner = new TestSchedulerBackgroundRunner(_scheduler);
-
-        _vm = new MainWindowViewModel(_logger.Object, _indexService.Object, _bbConverter.Object, _runner);
+        //_runner = new TestSchedulerBackgroundRunner(_scheduler);
+        //_vm = new MainWindowViewModel(_logger.Object, _indexService.Object, _bbConverter.Object, _runner);
     }
 
     [Fact]
     public void Constructor_ShouldInitializeWithDefaultValues()
     {
-        // Assert
-        Assert.NotNull(_vm.Forums);
-        Assert.Null(_vm.SelectedForum);
-        Assert.Equal("", _vm.ForumFilterText);
+        new TestScheduler().With(s =>
+        {
+            var runner = new TestSchedulerBackgroundRunner(s);
+            var vm = new MainWindowViewModel(_logger.Object, _indexService.Object, _bbConverter.Object, runner);
 
-        Assert.NotNull(_vm.Posts);
-        Assert.Null(_vm.SelectedPost);
-        Assert.Null(_vm.SelectedPostInfo);
-        Assert.Equal("", _vm.PostFilterText);
+            // Assert
+            Assert.NotNull(vm.Forums);
+            Assert.Null(vm.SelectedForum);
+            Assert.Equal("", vm.ForumFilterText);
 
-        Assert.NotNull(_vm.Import);
-        Assert.NotNull(_vm.ImportCommand);
+            Assert.NotNull(vm.Posts);
+            Assert.Null(vm.SelectedPost);
+            Assert.Null(vm.SelectedPostInfo);
+            Assert.Equal("", vm.PostFilterText);
 
-        Assert.NotNull(_vm.About);
-        Assert.NotNull(_vm.AboutCommand);
+            Assert.NotNull(vm.Import);
+            Assert.NotNull(vm.ImportCommand);
+
+            Assert.NotNull(vm.About);
+            Assert.NotNull(vm.AboutCommand);
+        });
     }
 
     [Fact]
     public void WhenActivated_ForumsAndPostsAreLoaded()
     {
-        // Arrange
-        _indexService.Setup(x => x.GetForums()).Returns([new Forum("Root")]);
+        new TestScheduler().With(s =>
+        {
+            // Arrange
+            _indexService.Setup(x => x.GetForums()).Returns([new Forum("Root")]);
 
-        _indexService
-            .Setup(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()))
-            .Returns(new SearchResult([
-                new Post { Id = 1, Title = "Post1" },
-                new Post { Id = 2, Title = "Post2" },
-                new Post { Id = 3, Title = "Post3" },
-                new Post { Id = 4, Title = "Post4" },
-            ], 10));
+            _indexService
+                .Setup(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()))
+                .Returns(new SearchResult([
+                    new Post { Id = 1, Title = "Post1" },
+                    new Post { Id = 2, Title = "Post2" },
+                    new Post { Id = 3, Title = "Post3" },
+                    new Post { Id = 4, Title = "Post4" },
+                ], 10));
 
-        // Before Activate Assert
-        Assert.Empty(_vm.Forums);
-        Assert.Empty(_vm.Posts);
+            var runner = new TestSchedulerBackgroundRunner(s);
+            var vm = new MainWindowViewModel(_logger.Object, _indexService.Object, _bbConverter.Object, runner);
 
-        // Act
-        _vm.Activator.Activate();
+            // Before Activate Assert
+            Assert.Empty(vm.Forums);
+            Assert.Empty(vm.Posts);
 
-        // After Activate Assert
-        Assert.Empty(_vm.Forums);
-        Assert.Empty(_vm.Posts);
+            // Act
+            vm.Activator.Activate();
 
-        // Move timer
-        _scheduler.AdvanceBy(2);
+            // After Activate Assert
+            Assert.Empty(vm.Forums);
+            Assert.Empty(vm.Posts);
 
-        // Final Assert
-        Assert.Single(_vm.Forums);
-        Assert.Equal(4, _vm.Posts.Count);
+            // Move timer
+            s.AdvanceBy(2);
 
-        _indexService.Verify(x => x.GetForums(), Times.Once);
-        _indexService.Verify(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()), Times.Once);
+            // Final Assert
+            Assert.Single(vm.Forums);
+            Assert.Equal(4, vm.Posts.Count);
+
+            _indexService.Verify(x => x.GetForums(), Times.Once);
+            _indexService.Verify(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()), Times.Once);
+        });
     }
 
     [Fact]
     public void ImportCommand_Should_Invoke_Interaction()
     {
-        // Arrange
-        var interactionCalled = false;
-        _vm.Import.RegisterHandler(ctx =>
+        new TestScheduler().With(s =>
         {
-            interactionCalled = true;
-            ctx.SetOutput(true);
+            // Arrange
+            var runner = new TestSchedulerBackgroundRunner(s);
+            var vm = new MainWindowViewModel(_logger.Object, _indexService.Object, _bbConverter.Object, runner);
+
+            var interactionCalled = false;
+            vm.Import.RegisterHandler(ctx =>
+            {
+                interactionCalled = true;
+                ctx.SetOutput(true);
+            });
+
+            // Act
+            vm.ImportCommand.Execute().Subscribe();
+
+            // Assert
+            Assert.True(interactionCalled);
         });
-
-        // Act
-        _vm.ImportCommand.Execute().Subscribe();
-
-        // Assert
-        Assert.True(interactionCalled);
     }
 
     [Fact]
     public void WhenImportIsSuccessful_ThenPostsAndForumsAreReloaded()
     {
-        // Arrange
-        _indexService.Setup(x => x.GetForums()).Returns([new Forum("Root")]);
-
-        _indexService
-            .Setup(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()))
-            .Returns(new SearchResult([
-                new Post { Id = 1, Title = "Post1" },
-                new Post { Id = 2, Title = "Post2" },
-                new Post { Id = 3, Title = "Post3" },
-                new Post { Id = 4, Title = "Post4" },
-            ], 10));
-
-        _vm.Import.RegisterHandler(ctx =>
+        new TestScheduler().With(s =>
         {
-            ctx.SetOutput(true);
+            // Arrange
+            var runner = new TestSchedulerBackgroundRunner(s);
+            var vm = new MainWindowViewModel(_logger.Object, _indexService.Object, _bbConverter.Object, runner);
+
+            _indexService.Setup(x => x.GetForums()).Returns([new Forum("Root")]);
+
+            _indexService
+                .Setup(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()))
+                .Returns(new SearchResult([
+                    new Post { Id = 1, Title = "Post1" },
+                    new Post { Id = 2, Title = "Post2" },
+                    new Post { Id = 3, Title = "Post3" },
+                    new Post { Id = 4, Title = "Post4" },
+                ], 10));
+
+            bool importInteractionHandled = false;
+            vm.Import.RegisterHandler(ctx =>
+            {
+                _output.WriteLine("Import Interaction Handled");
+                importInteractionHandled = true;
+                ctx.SetOutput(true);
+            });
+
+            // Act
+            _output.WriteLine("1. " + string.Join('\n', _indexService.Invocations.Select(i => i.ToString())));
+
+            vm.Activator.Activate();
+
+            _output.WriteLine("2. " + string.Join('\n', _indexService.Invocations.Select(i => i.ToString())));
+
+            s.AdvanceBy(2);
+
+            _output.WriteLine("3. " + string.Join('\n', _indexService.Invocations.Select(i => i.ToString())));
+
+            // Assert Before Command
+            _indexService.Verify(x => x.GetForums(), Times.Once);
+            _indexService.Verify(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()), Times.Once);
+
+            vm.ImportCommand.Execute().Subscribe();
+
+            _output.WriteLine("4. " + string.Join('\n', _indexService.Invocations.Select(i => i.ToString())));
+            s.AdvanceBy(30);
+            _output.WriteLine("5. " + string.Join('\n', _indexService.Invocations.Select(i => i.ToString())));
+
+            s.Start();
+            _output.WriteLine("6. " + string.Join('\n', _indexService.Invocations.Select(i => i.ToString())));
+
+            // Assert After Command
+            Assert.True(importInteractionHandled);
+            _indexService.Verify(x => x.GetForums(), Times.Exactly(2));
+            _indexService.Verify(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()), Times.Exactly(2));
+            _indexService.VerifyNoOtherCalls();
         });
-
-        // Act
-        _vm.Activator.Activate();
-
-        _scheduler.AdvanceBy(2);
-
-        // Assert Before Command
-        _indexService.Verify(x => x.GetForums(), Times.Once);
-        _indexService.Verify(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()), Times.Once);
-
-        _indexService.Invocations.Clear();
-        _indexService.VerifyNoOtherCalls();
-
-        _vm.ImportCommand.Execute().Subscribe();
-
-        _scheduler.AdvanceBy(3);
-
-        // Assert After Command
-        _indexService.Verify(x => x.GetForums(), Times.Once);
-        _indexService.Verify(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()), Times.Once);
-        _indexService.VerifyNoOtherCalls();
     }
-    
+
     [Fact]
     public void WhenImportFails_ThenNoReloadIsTriggered()
     {
-        // Arrange
-        _indexService.Setup(x => x.GetForums()).Returns([new Forum("Root")]);
+        new TestScheduler().With(s =>
+        {
+            // Arrange
+            var runner = new TestSchedulerBackgroundRunner(s);
+            var vm = new MainWindowViewModel(_logger.Object, _indexService.Object, _bbConverter.Object, runner);
 
-        _indexService
-            .Setup(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()))
-            .Returns(new SearchResult([
-                new Post { Id = 1, Title = "Post1" },
+            _indexService.Setup(x => x.GetForums()).Returns([new Forum("Root")]);
+
+            _indexService
+                .Setup(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()))
+                .Returns(new SearchResult([
+                    new Post { Id = 1, Title = "Post1" },
                 new Post { Id = 2, Title = "Post2" },
                 new Post { Id = 3, Title = "Post3" },
                 new Post { Id = 4, Title = "Post4" },
-            ], 10));
+                ], 10));
 
-        _vm.Import.RegisterHandler(ctx =>
-        {
-            ctx.SetOutput(false);
+            vm.Import.RegisterHandler(ctx =>
+            {
+                ctx.SetOutput(false);
+            });
+
+            // Act
+            vm.Activator.Activate();
+
+            s.AdvanceBy(2);
+
+            // Assert Before Command
+            _indexService.Verify(x => x.GetForums(), Times.Once);
+            _indexService.Verify(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()), Times.Once);
+
+            _indexService.Invocations.Clear();
+            _indexService.VerifyNoOtherCalls();
+
+            vm.ImportCommand.Execute().Subscribe();
+
+            s.AdvanceBy(3);
+
+            // Assert After Command
+            _indexService.VerifyNoOtherCalls();
         });
-
-        // Act
-        _vm.Activator.Activate();
-
-        _scheduler.AdvanceBy(2);
-
-        // Assert Before Command
-        _indexService.Verify(x => x.GetForums(), Times.Once);
-        _indexService.Verify(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()), Times.Once);
-
-        _indexService.Invocations.Clear();
-        _indexService.VerifyNoOtherCalls();
-
-        _vm.ImportCommand.Execute().Subscribe();
-
-        _scheduler.AdvanceBy(3);
-
-        // Assert After Command
-        _indexService.VerifyNoOtherCalls();
     }
 
     [Fact]
     public void AboutCommand_Should_Invoke_AboutInteraction()
     {
-        var called = false;
-        _vm.About.RegisterHandler(ctx =>
+        new TestScheduler().With(s =>
         {
-            called = true;
-            ctx.SetOutput(Unit.Default);
+            // Arrange
+            var runner = new TestSchedulerBackgroundRunner(s);
+            var vm = new MainWindowViewModel(_logger.Object, _indexService.Object, _bbConverter.Object, runner);
+
+            var called = false;
+            vm.About.RegisterHandler(ctx =>
+            {
+                called = true;
+                ctx.SetOutput(Unit.Default);
+            });
+
+            vm.AboutCommand.Execute().Subscribe();
+
+            Assert.True(called);
         });
-
-        _vm.AboutCommand.Execute().Subscribe();
-
-        Assert.True(called);
     }
 
     [Fact]
     public void WhenForumFilterTextChanges_ThenForumsAreFiltered()
     {
-        // Arrange
-        _indexService
-            .Setup(x => x.GetForums())
-            .Returns([new Forum("Programming"), new Forum("Music")]);
+        new TestScheduler().With(s =>
+        {
+            // Arrange
+            var runner = new TestSchedulerBackgroundRunner(s);
+            var vm = new MainWindowViewModel(_logger.Object, _indexService.Object, _bbConverter.Object, runner);
 
-        _indexService
-            .Setup(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()))
-            .Returns(new SearchResult([new Post { Id = 1 }], 10));
+            _indexService
+                .Setup(x => x.GetForums())
+                .Returns([new Forum("Programming"), new Forum("Music")]);
 
-        _vm.Activator.Activate();
+            _indexService
+                .Setup(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()))
+                .Returns(new SearchResult([new Post { Id = 1 }], 10));
 
-        _scheduler.AdvanceBy(2);
+            vm.Activator.Activate();
 
-        Assert.Equal(2, _vm.Forums.Count);
+            s.AdvanceBy(2);
 
-        // Act
-        _vm.ForumFilterText = "Prog";
+            Assert.Equal(2, vm.Forums.Count);
 
-        _scheduler.AdvanceBy(TimeSpan.FromMilliseconds(600).Ticks);
+            // Act
+            vm.ForumFilterText = "Prog";
 
-        // Assert
-        Assert.Single(_vm.Forums);
-        Assert.Equal("Programming", _vm.Forums[0].Name);
-        _indexService.Verify(x => x.GetForums(), Times.Once);
-        _indexService.Verify(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()), Times.Once);
-        _indexService.VerifyNoOtherCalls();
+            s.AdvanceBy(TimeSpan.FromMilliseconds(600).Ticks);
+
+            // Assert
+            Assert.Single(vm.Forums);
+            Assert.Equal("Programming", vm.Forums[0].Name);
+            _indexService.Verify(x => x.GetForums(), Times.Once);
+            _indexService.Verify(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()), Times.Once);
+            _indexService.VerifyNoOtherCalls();
+        });
     }
 
     [Fact]
     public void WhenPostIsSelected_ThenPostInfoIsUpdated()
     {
-        var post = new Post
+        new TestScheduler().With(s =>
         {
-            Id = 10,
-            Content = "[b]hello[/b]",
-            Title = "Title",
-        };
+            var runner = new TestSchedulerBackgroundRunner(s);
+            var vm = new MainWindowViewModel(_logger.Object, _indexService.Object, _bbConverter.Object, runner);
 
-        _bbConverter.Setup(x => x.Convert("[b]hello[/b]")).Returns("<b>hello</b>");
+            var post = new Post
+            {
+                Id = 10,
+                Content = "[b]hello[/b]",
+                Title = "Title",
+            };
 
-        _vm.Activator.Activate();
+            _bbConverter.Setup(x => x.Convert("[b]hello[/b]")).Returns("<b>hello</b>");
 
-        _vm.SelectedPost = post;
-        _scheduler.AdvanceBy(TimeSpan.FromMilliseconds(600).Ticks);
-        //_scheduler.Start();
+            vm.Activator.Activate();
 
-        Assert.NotNull(_vm.SelectedPostInfo);
-        Assert.Equal(post.Title, _vm.SelectedPostInfo.Title);
-        Assert.Equal("<b>hello</b>", _vm.SelectedPostInfo.Content);
+            vm.SelectedPost = post;
+            s.AdvanceBy(TimeSpan.FromMilliseconds(600).Ticks);
+            //_scheduler.Start();
+
+            Assert.NotNull(vm.SelectedPostInfo);
+            Assert.Equal(post.Title, vm.SelectedPostInfo.Title);
+            Assert.Equal("<b>hello</b>", vm.SelectedPostInfo.Content);
+        });
     }
 
     [Fact]
     public void WhenSelectedPostIsCleared_ThenPostInfoIsCleared()
     {
-        // Arrange
-        var post = new Post { Id = 1, Title = "Test", Content = "Content" };
-        _vm.SelectedPost = post;
-        _scheduler.AdvanceBy(1);
+        new TestScheduler().With(s =>
+        {
+            // Arrange
+            var runner = new TestSchedulerBackgroundRunner(s);
+            var vm = new MainWindowViewModel(_logger.Object, _indexService.Object, _bbConverter.Object, runner);
 
-        // Act
-        _vm.SelectedPost = null;
-        _scheduler.AdvanceBy(1);
+            var post = new Post { Id = 1, Title = "Test", Content = "Content" };
+            vm.SelectedPost = post;
+            s.AdvanceBy(1);
 
-        // Assert
-        Assert.Null(_vm.SelectedPostInfo);
+            // Act
+            vm.SelectedPost = null;
+            s.AdvanceBy(1);
+
+            // Assert
+            Assert.Null(vm.SelectedPostInfo);
+        });
     }
 
     [Fact]
     public void WhenForumIsSelected_ThenSearchIsExecutedWithDelay()
     {
-        // Arrange
-        var forum = new Forum("Root");
-        var node = new DynamicData.Node<Forum, string>(forum, forum.Id);
+        new TestScheduler().With(s =>
+        {
+            // Arrange
+            var runner = new TestSchedulerBackgroundRunner(s);
+            var vm = new MainWindowViewModel(_logger.Object, _indexService.Object, _bbConverter.Object, runner);
 
-        var forumSortComparer = SortExpressionComparer<ForumViewModel>.Ascending(f => f.Order).ThenByAscending(x => x.Name);
+            var forum = new Forum("Root");
+            var node = new DynamicData.Node<Forum, string>(forum, forum.Id);
 
-        _indexService.Setup(x => x.GetForums()).Returns([forum]);
+            var forumSortComparer = SortExpressionComparer<ForumViewModel>.Ascending(f => f.Order).ThenByAscending(x => x.Name);
 
-        _indexService
-            .Setup(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()))
-            .Returns(new SearchResult([
-                new Post { Id = 1, Title = "Post1" },
-                new Post { Id = 2, Title = "Post2" },
-                new Post { Id = 3, Title = "Post3" },
-                new Post { Id = 4, Title = "Post4" },
-            ], 10));
+            _indexService.Setup(x => x.GetForums()).Returns([forum]);
 
-        _vm.Activator.Activate();
+            _indexService
+                .Setup(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()))
+                .Returns(new SearchResult([
+                    new Post { Id = 1, Title = "Post1" },
+                    new Post { Id = 2, Title = "Post2" },
+                    new Post { Id = 3, Title = "Post3" },
+                    new Post { Id = 4, Title = "Post4" },
+                ], 10));
 
-        _scheduler.AdvanceBy(2);
+            vm.Activator.Activate();
 
-        // Assert Before Command
-        _indexService.Verify(x => x.GetForums(), Times.Once);
-        _indexService.Verify(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()), Times.Once);
+            s.AdvanceBy(2);
 
-        _indexService.Invocations.Clear();
-        _indexService.VerifyNoOtherCalls();
+            // Assert Before Command
+            _indexService.Verify(x => x.GetForums(), Times.Once);
+            _indexService.Verify(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()), Times.Once);
 
-        // Act
-        _vm.SelectedForum = new ForumViewModel(node, forumSortComparer);
+            _indexService.Invocations.Clear();
+            _indexService.VerifyNoOtherCalls();
 
-        // Small delay
-        _scheduler.AdvanceBy(TimeSpan.FromMilliseconds(300).Ticks);
-        _indexService.VerifyNoOtherCalls();
+            // Act
+            vm.SelectedForum = new ForumViewModel(node, forumSortComparer);
 
-        _scheduler.AdvanceBy(TimeSpan.FromMilliseconds(300).Ticks);
+            // Small delay
+            s.AdvanceBy(TimeSpan.FromMilliseconds(300).Ticks);
+            _indexService.VerifyNoOtherCalls();
 
-        // Assert After Command
-        _indexService.Verify(x => x.GetForums(), Times.Never);
-        _indexService.Verify(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()), Times.Once);
-        _indexService.VerifyNoOtherCalls();
+            s.AdvanceBy(TimeSpan.FromMilliseconds(300).Ticks);
+
+            // Assert After Command
+            _indexService.Verify(x => x.GetForums(), Times.Never);
+            _indexService.Verify(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()), Times.Once);
+            _indexService.VerifyNoOtherCalls();
+        });
     }
 
     [Fact]
     public void WhenPostFilterTextChanges_ThenSearchIsExecutedWithDelay()
     {
-        // Arrange
-        _indexService.Setup(x => x.GetForums()).Returns([new Forum("Root")]);
+        new TestScheduler().With(s =>
+        {
+            // Arrange
+            var runner = new TestSchedulerBackgroundRunner(s);
+            var vm = new MainWindowViewModel(_logger.Object, _indexService.Object, _bbConverter.Object, runner);
 
-        _indexService
-            .Setup(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()))
-            .Returns(new SearchResult([
-                new Post { Id = 1, Title = "Post1" },
-                new Post { Id = 2, Title = "Post2" },
-                new Post { Id = 3, Title = "Post3" },
-                new Post { Id = 4, Title = "Post4" },
-            ], 10));
+            _indexService.Setup(x => x.GetForums()).Returns([new Forum("Root")]);
 
-        _vm.Activator.Activate();
+            _indexService
+                .Setup(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()))
+                .Returns(new SearchResult([
+                    new Post { Id = 1, Title = "Post1" },
+                    new Post { Id = 2, Title = "Post2" },
+                    new Post { Id = 3, Title = "Post3" },
+                    new Post { Id = 4, Title = "Post4" },
+                ], 10));
 
-        _scheduler.AdvanceBy(2);
+            vm.Activator.Activate();
 
-        // Assert Before Command
-        _indexService.Verify(x => x.GetForums(), Times.Once);
-        _indexService.Verify(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()), Times.Once);
+            s.AdvanceBy(2);
 
-        _indexService.Invocations.Clear();
-        _indexService.VerifyNoOtherCalls();
+            // Assert Before Command
+            _indexService.Verify(x => x.GetForums(), Times.Once);
+            _indexService.Verify(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()), Times.Once);
 
-        // Act
-        _vm.PostFilterText = "post";
+            _indexService.Invocations.Clear();
+            _indexService.VerifyNoOtherCalls();
 
-        // Small delay
-        _scheduler.AdvanceBy(TimeSpan.FromMilliseconds(300).Ticks);
-        _indexService.VerifyNoOtherCalls();
+            // Act
+            vm.PostFilterText = "post";
 
-        _scheduler.AdvanceBy(TimeSpan.FromMilliseconds(300).Ticks);
+            // Small delay
+            s.AdvanceBy(TimeSpan.FromMilliseconds(300).Ticks);
+            _indexService.VerifyNoOtherCalls();
 
-        // Assert After Command
-        _indexService.Verify(x => x.GetForums(), Times.Never);
-        _indexService.Verify(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()), Times.Once);
-        _indexService.VerifyNoOtherCalls();
+            s.AdvanceBy(TimeSpan.FromMilliseconds(300).Ticks);
+
+            // Assert After Command
+            _indexService.Verify(x => x.GetForums(), Times.Never);
+            _indexService.Verify(x => x.Search(It.IsAny<PostQuery>(), It.IsAny<int>()), Times.Once);
+            _indexService.VerifyNoOtherCalls();
+        });
     }
 }

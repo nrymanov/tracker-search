@@ -1,5 +1,3 @@
-using Avalonia.Controls;
-
 namespace TrackerOfflineSearch.Dialogs.Import;
 
 [ExcludeFromCodeCoverage]
